@@ -86,7 +86,7 @@ function App() {
                     return rowData;
                 });
                 const maxVal = 100 * Math.ceil(1 / 100 * d3.max(populationAdjustedCovidData.map(e => e[REPORTED_FIELD])))
-                const medVal = d3.median(populationAdjustedCovidData.map(e => e[REPORTED_FIELD]))
+                // const medVal = d3.median(populationAdjustedCovidData.map(e => e[REPORTED_FIELD]))
 
                 covidData = null;
 
@@ -99,7 +99,7 @@ function App() {
                     .domain([1, maxVal / 2, maxVal])
                     .range(["white", "orange", "red"]);
 
-                const dateText = svg.append("text")
+                svg.append("text")
                     .text("Date goes here")
                     .attr("y", 25);
 
@@ -154,7 +154,8 @@ function App() {
                     .range([0, 150])
                     .domain([0, maxVal]);
 
-                const xAxis = legendsvg
+                // x-axis
+                legendsvg
                     .append("g")
                     .call(
                         d3
