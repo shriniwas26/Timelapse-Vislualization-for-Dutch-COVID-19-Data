@@ -5,9 +5,11 @@ import 'bootstrap/dist/css/bootstrap.css'; // or include from a CDN
 import 'react-bootstrap-range-slider/dist/react-bootstrap-range-slider.css';
 import RangeSlider from 'react-bootstrap-range-slider';
 import Moment from 'moment'
+import Button from 'react-bootstrap/Button'
+
 // import Slider from 'react-rangeslider'
 
-const ANIMATION_DELAY = 100;
+const ANIMATION_DELAY = 50;
 const PER_POPULATION = 1E5;
 const REPORTED_FIELD = "Daily_reported_moving_average";
 
@@ -26,10 +28,11 @@ class App extends React.Component {
             dailyReportedByDay: null,
 
             // Animation related state
-            selectedDay: 1,
+            selectedDayNr: 1,
             numberOfDays: null,
             colorScale: null,
-            covidMap: null
+            covidMap: null,
+            isPlaying: false
         }
     }
 
@@ -77,7 +80,7 @@ class App extends React.Component {
                     return rowData;
                 });
                 const maxVal = 100 * Math.ceil(1 / 100 * d3.max(populationAdjustedCovidData.map(e => e[REPORTED_FIELD])))
-
+                const medVal = d3.mean(populationAdjustedCovidData.map(e => e[REPORTED_FIELD]))
 
                 const dailyReportedByDay = d3.group(populationAdjustedCovidData, x => x["Date_of_report"]);
 
@@ -92,9 +95,9 @@ class App extends React.Component {
                     populationData[e["Regions"]] = + e["PopulationOn1January_1"]
                 })
 
-                const colorScale = d3.scaleLog()
-                    .base(1.1)
-                    .domain([1, maxVal / 2, maxVal])
+                const colorScale = d3.scaleLinear()
+                    // .base(1.1)
+                    .domain([0, medVal, maxVal])
                     .range(["white", "orange", "red"]);
 
                 svg.append("text")
@@ -158,7 +161,7 @@ class App extends React.Component {
                     .call(
                         d3
                             .axisBottom(legendScale)
-                            .tickValues([0, maxVal / 2, maxVal])
+                            .tickValues([0, medVal, maxVal])
                     )
                     .attr("class", "legendAxis")
                     .attr("id", "legendAxis")
@@ -208,10 +211,10 @@ class App extends React.Component {
         // .style("border", "5px solid grey")
     }
 
-    redraw = () => {
+    redraw = (dayNumber) => {
 
         const selectedDayIdx = Math.min(
-            Math.max(0, this.state.selectedDay),
+            Math.max(0, dayNumber),
             this.state.numberOfDays - 1
         );
 
@@ -234,7 +237,7 @@ class App extends React.Component {
         this.state.covidMap
             .transition()
             .duration(ANIMATION_DELAY)
-            .ease(d3.easeLinear)
+            .ease(d3.easePoly)
             .attr("fill", e => {
                 const currentReported = dailyDict[areaCodeToGmCode(e.properties.areaCode)];
                 if (currentReported === undefined) {
@@ -247,24 +250,47 @@ class App extends React.Component {
 
                 return this.state.colorScale(currentReported);
             });
-    } // end draw()
+    } // end redraw()
+
+    componentDidUpdate() {
+        if (this.state.selectedDayNr >= this.state.numberOfDays) {
+            console.log("Setting state to 0")
+            this.setState({
+                selectedDayNr: 0,
+                isPlaying: false
+            })
+        }
+
+        if (this.state.isPlaying) {
+            if (this.state.selectedDayNr < this.state.numberOfDays - 1) {
+                setTimeout(() => {
+                    this.setState({
+                        selectedDayNr: this.state.selectedDayNr + 1
+                    })
+                }, 40);
+            }
+        }
+    }
+
 
     render() {
-
         if (this.state.populationData !== null) {
-            this.redraw();
+            this.redraw(this.state.selectedDayNr);
         }
 
         return (
-            <div className="m-5 w-50 col-12" >
+            <div className="m-5 w-50 col-12 justify-content-center" >
                 <svg ref={this.ref}>
                 </svg>
+                <br></br>
                 <RangeSlider
+                    className='justify-content-center'
+                    style={{ align: "center" }}
                     min={0}
                     max={this.state.numberOfDays - 1}
                     step={1}
-                    value={this.state.selectedDay}
-                    tooltipPlacement={"bottom"}
+                    value={this.state.selectedDayNr}
+                    tooltipPlacement={"top"}
                     tooltip='auto'
                     aria-label="Calendar day"
                     tooltipLabel={i => {
@@ -278,10 +304,33 @@ class App extends React.Component {
                     size={'sm'}
                     onChange={(changeEvent) => {
                         this.setState({
-                            selectedDay: changeEvent.target.value
+                            selectedDayNr: parseInt(changeEvent.target.value),
+                            isPlaying: false
                         });
                     }}
                 />
+                {/* <br></br> */}
+                <Button
+                    className='m-1'
+                    onClick={() => {
+                        this.setState({
+                            selectedDayNr: 0,
+                            isPlaying: false
+                        })
+                    }}
+                >
+                    Reset
+                </Button>
+                <Button
+                    className='m-1'
+                    onClick={() => {
+                        this.setState({
+                            isPlaying: !this.state.isPlaying
+                        });
+                    }}
+                >
+                    Play/Pause
+                </Button>
             </div>
 
         )
