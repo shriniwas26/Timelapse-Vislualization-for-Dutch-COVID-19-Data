@@ -5,11 +5,9 @@ import 'bootstrap/dist/css/bootstrap.css'; // or include from a CDN
 import 'react-bootstrap-range-slider/dist/react-bootstrap-range-slider.css';
 import RangeSlider from 'react-bootstrap-range-slider';
 import Moment from 'moment'
-import moment from 'moment';
-
 // import Slider from 'react-rangeslider'
 
-const ANIMATION_DELAY = 200;
+const ANIMATION_DELAY = 100;
 const PER_POPULATION = 1E5;
 const REPORTED_FIELD = "Daily_reported_moving_average";
 
@@ -93,8 +91,6 @@ class App extends React.Component {
                 populationData.forEach(e => {
                     populationData[e["Regions"]] = + e["PopulationOn1January_1"]
                 })
-
-
 
                 const colorScale = d3.scaleLog()
                     .base(1.1)
@@ -209,7 +205,7 @@ class App extends React.Component {
         d3.select(this.ref.current)
             .attr("width", 600)
             .attr("height", 450)
-            // .style("border", "5px solid grey")
+        // .style("border", "5px solid grey")
     }
 
     redraw = () => {
@@ -265,7 +261,7 @@ class App extends React.Component {
                 </svg>
                 <RangeSlider
                     min={0}
-                    max={this.state.numberOfDays}
+                    max={this.state.numberOfDays - 1}
                     step={1}
                     value={this.state.selectedDay}
                     tooltipPlacement={"bottom"}

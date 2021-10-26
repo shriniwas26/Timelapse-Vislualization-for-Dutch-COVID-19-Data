@@ -1,5 +1,5 @@
 {
-  "name": "d3-app",
+  "name": "covid-19-animated-with-react",
   "version": "0.1.0",
   "private": true,
   "dependencies": {
@@ -9,17 +9,15 @@
     "bootstrap": "^5.1.3",
     "d3": "^7.1.1",
     "moment": "^2.29.1",
-    "papaparse": "^5.3.1",
     "react": "^17.0.2",
     "react-bootstrap": "^2.0.0",
     "react-bootstrap-range-slider": "^3.0.2",
     "react-dom": "^17.0.2",
-    "react-rangeslider": "^2.2.0",
     "react-scripts": "4.0.3",
     "web-vitals": "^1.0.1"
   },
   "scripts": {
-    "start": "PORT=4001 react-scripts start",
+    "start": "react-scripts start",
     "build": "react-scripts build",
     "test": "react-scripts test",
     "eject": "react-scripts eject"
