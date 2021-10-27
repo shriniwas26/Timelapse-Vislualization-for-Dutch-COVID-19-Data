@@ -122,7 +122,6 @@ class App extends React.Component {
                     .attr("offset", d => d.offset)
                     .attr("stop-color", d => d.color);
 
-
                 const legendsvg = svg
                     .append("g")
                     .attr("id", "legend")
@@ -130,7 +129,7 @@ class App extends React.Component {
                         "transform",
                         "translate(10, 50)"
                     );
-                ;
+
                 //Draw the Rectangle
                 legendsvg
                     .append("rect")
@@ -141,8 +140,7 @@ class App extends React.Component {
                     .attr("height", 10)
                     .style("fill", "url(#linear-gradient)")
                     .style("stroke", "black")
-                    .style("stroke-width", 0.5)
-                    ;
+                    .style("stroke-width", 0.5);
 
                 legendsvg
                     .append("text")
@@ -170,6 +168,17 @@ class App extends React.Component {
                         "translate(0, 20)"
                     );
 
+                const toolDiv = d3.select("#chartArea")
+                    .append("div")
+                    .style("visibility", "hidden")
+                    // .style("opacity", "100%")
+                    .style("position", "absolute")
+                    .style("background-color", "skyblue")
+                    .style("font", "14px times")
+                    .style("border-radius", "10px")
+                    .style("box-sizing", "border-box")
+                    .style("padding", "10px")
+                    ;
 
                 // Draw the map
                 const covidMap = svg.append("g")
@@ -184,11 +193,35 @@ class App extends React.Component {
                     .attr("d", d3.geoPath()
                         .projection(projection)
                     )
+                    .attr("id", d => areaCodeToGmCode(d.properties.areaCode))
                     // set the color of each Municiaplity
-                    .attr("fill", e => {
-                        const currentReported = covidDataDict[areaCodeToGmCode(e.properties.areaCode)];
+                    .attr("fill", d => {
+                        const currentReported = covidDataDict[areaCodeToGmCode(d.properties.areaCode)];
                         return colorScale(currentReported);
-                    });
+                    })
+                    .on("mouseover", function (e, d) {
+                        // console.log(e);
+                        // console.log(d);
+                        d3
+                            .select(this)
+                            .attr("stroke-width", 4.0);
+
+                        toolDiv
+                            .style("visibility", "visible")
+                            .text(`Region: ${d.properties.areaName}`)
+
+                    })
+                    .on('mousemove', (e, d) => {
+                        toolDiv.style('top', (e.pageY - 50) + 'px')
+                            .style('left', (e.pageX - 50) + 'px')
+                    })
+                    .on('mouseout', function () {
+                        toolDiv.style('visibility', 'hidden');
+                        d3
+                            .select(this)
+                            .attr("stroke-width", 1.0);
+                    })
+                    ;
 
 
                 this.setState({
@@ -201,13 +234,12 @@ class App extends React.Component {
                     covidMap: covidMap
                 });
 
-
             });
 
 
         d3.select(this.ref.current)
             .attr("width", 600)
-            .attr("height", 450)
+            .attr("height", 450);
         // .style("border", "5px solid grey")
     }
 
@@ -279,10 +311,13 @@ class App extends React.Component {
         }
 
         return (
-            <div className="m-5 w-50 col-12 justify-content-center" >
+            <div
+                id="chartArea"
+                className="m-5 w-50 col-12 justify-content-center"
+            >
                 <svg ref={this.ref}>
                 </svg>
-                <br></br>
+                <br />
                 <RangeSlider
                     className='justify-content-center'
                     style={{ align: "center" }}
@@ -309,7 +344,7 @@ class App extends React.Component {
                         });
                     }}
                 />
-                {/* <br></br> */}
+                <br />
                 <Button
                     className='m-1'
                     onClick={() => {
