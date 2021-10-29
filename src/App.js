@@ -11,10 +11,29 @@ import Button from 'react-bootstrap/Button'
 
 const ANIMATION_DELAY = 50;
 const PER_POPULATION = 1E5;
-const REPORTED_FIELD = "Daily_reported_moving_average";
+const REPORTED_FIELD = "Total_reported";
+const DAILY_REPORTED_FIELD = "Daily_" + REPORTED_FIELD;
+const DAILY_REPORTED_FIELD_MA = "Daily_" + REPORTED_FIELD + "_ma";
+const MOVING_AVG_WINDOW = 7;
 
 const areaCodeToGmCode = (x) => {
     return "GM" + x.toString().padStart(4, '0');
+}
+
+const movingAvg = (inputArr, maWin) => {
+    const tempArr = Array(inputArr.length);
+    for (let i = 0; i < inputArr.length; i++) {
+        tempArr[i] = 0;
+        let n = 0;
+        for (let j = 0; j < maWin; j++) {
+            if (i + j < inputArr.length) {
+                n++;
+                tempArr[i] = tempArr[i] + inputArr[i + j];
+            }
+        }
+        tempArr[i] = tempArr[i] / n;
+    }
+    return tempArr;
 }
 
 class App extends React.Component {
@@ -25,7 +44,7 @@ class App extends React.Component {
         this.state = {
             populationData: null,
             nlGeoJson: null,
-            dailyReportedByDay: null,
+            covidDataGroupedByDay: null,
 
             // Animation related state
             selectedDayNr: 1,
@@ -40,7 +59,7 @@ class App extends React.Component {
         const urls = [
             "data/nl.json",
             "data/NL_Population_Latest.csv",
-            "data/COVID-19-NL-Municipality-Wise.csv"
+            "data/COVID-19_aantallen_gemeente_cumulatief.csv"
         ]
 
         Promise.all(urls.map(url =>
@@ -49,45 +68,74 @@ class App extends React.Component {
         ))
             .then(([nlGeoJsonText, populationDataText, covidDataText]) => {
                 const nlGeoJson = JSON.parse(nlGeoJsonText);
-                const covidData = d3.csvParse(covidDataText);
-                const populationData = d3.csvParse(populationDataText);
-                populationData.forEach(e => {
-                    populationData[e["Regions"]] = + e["PopulationOn1January_1"]
+                const covidData = d3.csvParse(
+                    covidDataText.replaceAll(";", ","),
+                    d3.autoType
+                );
+                const populationData = d3.csvParse(
+                    populationDataText,
+                    d3.autoType
+                );
+
+                const populationDataDict = Object.fromEntries(
+                    populationData.map(elem => {
+                        return [
+                            elem["Regions"],
+                            elem["PopulationOn31December_20"]
+                        ]
+                    })
+                );
+
+                /** Calculate daily values */
+                const covidDataGroupedByMunicipality = d3.group(
+                    covidData,
+                    x => x["Municipality_code"]
+                );
+
+                covidDataGroupedByMunicipality.forEach(munData => {
+                    munData[0][DAILY_REPORTED_FIELD] = 0;
+                    for (let i = 1; i < munData.length; i++) {
+                        munData[i][DAILY_REPORTED_FIELD] =
+                            munData[i][REPORTED_FIELD] - munData[i - 1][REPORTED_FIELD];
+                    }
+                    // Compute moving average
+                    const movingAvgArr = movingAvg(
+                        munData.map(
+                            d => d[DAILY_REPORTED_FIELD]
+                        ),
+                        MOVING_AVG_WINDOW
+                    );
+                    for (let i = 0; i < munData.length; i++) {
+                        munData[i][DAILY_REPORTED_FIELD_MA] = movingAvgArr[i];
+                    }
                 });
 
+                const covidDataDiffed = Array.from(covidDataGroupedByMunicipality)
+                    .map(x => x[1])
+                    .flat();
 
-                const covidDataDict = {}
-                covidData.forEach(e => {
-                    if (e["Municipality_code"] === undefined) {
-                        return;
-                    }
-                    if (!(e["Municipality_code"] in populationData)) {
-                        console.warn(`No population data for ${e["Municipality_name"]}`);
-                    }
-                    const adjustedReported = e[REPORTED_FIELD] / populationData[e["Municipality_code"]] * PER_POPULATION;
-                    covidDataDict[e["Municipality_code"]] = adjustedReported;
-                });
-
-                const populationAdjustedCovidData = covidData.map(elem => {
+                const populationAdjustedCovidData = covidDataDiffed.map(elem => {
                     const rowData = {};
-
                     rowData["Date_of_report"] = Moment(elem["Date_of_report"]).format("YYYY, MMMM DD");
                     rowData["Municipality_code"] = elem["Municipality_code"];
-                    rowData[REPORTED_FIELD] = Math.round(
-                        elem[REPORTED_FIELD] /
-                        populationData[elem["Municipality_code"]] * PER_POPULATION
+                    rowData[DAILY_REPORTED_FIELD_MA] = Math.round(
+                        elem[DAILY_REPORTED_FIELD_MA] /
+                        populationDataDict[elem["Municipality_code"]] * PER_POPULATION
                     );
                     return rowData;
                 });
-                const maxVal = 100 * Math.ceil(1 / 100 * d3.max(populationAdjustedCovidData.map(e => e[REPORTED_FIELD])))
-                const medVal = d3.mean(populationAdjustedCovidData.map(e => e[REPORTED_FIELD]))
 
-                const dailyReportedByDay = d3.group(populationAdjustedCovidData, x => x["Date_of_report"]);
+                const maxVal = 100 * Math.ceil(1 / 100 * d3.max(
+                    populationAdjustedCovidData.map(e => e[DAILY_REPORTED_FIELD_MA])))
+                const medVal = d3.mean(
+                    populationAdjustedCovidData.map(e => e[DAILY_REPORTED_FIELD_MA]))
+
+
+                const covidDataGroupedByDay = d3.group(populationAdjustedCovidData, x => x["Date_of_report"]);
 
                 let projection = d3.geoMercator()
                     .scale(5000)
                     .center([7, 52]);
-
 
                 const svg = d3.select(this.ref.current);
 
@@ -96,7 +144,6 @@ class App extends React.Component {
                 })
 
                 const colorScale = d3.scaleLinear()
-                    // .base(1.1)
                     .domain([0, medVal, maxVal])
                     .range(["white", "orange", "red"]);
 
@@ -171,7 +218,6 @@ class App extends React.Component {
                 const toolDiv = d3.select("#chartArea")
                     .append("div")
                     .style("visibility", "hidden")
-                    // .style("opacity", "100%")
                     .style("position", "absolute")
                     .style("background-color", "skyblue")
                     .style("font", "14px times")
@@ -194,42 +240,34 @@ class App extends React.Component {
                         .projection(projection)
                     )
                     .attr("id", d => areaCodeToGmCode(d.properties.areaCode))
-                    // set the color of each Municiaplity
-                    .attr("fill", d => {
-                        const currentReported = covidDataDict[areaCodeToGmCode(d.properties.areaCode)];
-                        return colorScale(currentReported);
-                    })
-                    .on("mouseover", function (e, d) {
-                        // console.log(e);
-                        // console.log(d);
+                    .on("mouseover", (e, d) => {
                         d3
-                            .select(this)
+                            .select(e.target)
                             .attr("stroke-width", 4.0);
 
                         toolDiv
                             .style("visibility", "visible")
-                            .text(`Region: ${d.properties.areaName}`)
-
+                            .text(`Municiaplity: ${d.properties.areaName}`)
                     })
                     .on('mousemove', (e, d) => {
-                        toolDiv.style('top', (e.pageY - 50) + 'px')
+                        toolDiv
+                            .style('top', (e.pageY - 50) + 'px')
                             .style('left', (e.pageX - 50) + 'px')
                     })
-                    .on('mouseout', function () {
+                    .on('mouseout', (e) => {
                         toolDiv.style('visibility', 'hidden');
                         d3
-                            .select(this)
+                            .select(e.target)
                             .attr("stroke-width", 1.0);
                     })
                     ;
-
 
                 this.setState({
                     nlGeoJson: nlGeoJson,
                     populationData: populationData,
                     covidData: covidData,
-                    dailyReportedByDay: dailyReportedByDay,
-                    numberOfDays: dailyReportedByDay.size,
+                    covidDataGroupedByDay: covidDataGroupedByDay,
+                    numberOfDays: covidDataGroupedByDay.size,
                     colorScale: colorScale,
                     covidMap: covidMap
                 });
@@ -237,9 +275,16 @@ class App extends React.Component {
             });
 
 
-        d3.select(this.ref.current)
+        const svg = d3.select(this.ref.current)
             .attr("width", 600)
             .attr("height", 450);
+
+        svg
+            .append("p")
+            .attr("x", 300)
+            .attr("height", 225)
+            .text("Loading...")
+            .attr("font-weight", "700");
         // .style("border", "5px solid grey")
     }
 
@@ -250,12 +295,12 @@ class App extends React.Component {
             this.state.numberOfDays - 1
         );
 
-        const dayKey = [...this.state.dailyReportedByDay.keys()][selectedDayIdx];
-        const dailyData = this.state.dailyReportedByDay.get(dayKey);
+        const dayKey = [...this.state.covidDataGroupedByDay.keys()][selectedDayIdx];
+        const dailyData = this.state.covidDataGroupedByDay.get(dayKey);
 
         const dailyDict = {};
         dailyData.forEach(e => {
-            dailyDict[e["Municipality_code"]] = e[REPORTED_FIELD];
+            dailyDict[e["Municipality_code"]] = e[DAILY_REPORTED_FIELD_MA];
         });
 
         const svg = d3.select(this.ref.current);
@@ -266,6 +311,8 @@ class App extends React.Component {
             .text(`Day: ${dayKey}`)
             ;
 
+        const toolDiv = d3.select("#chartArea").selectAll("div");
+
         this.state.covidMap
             .transition()
             .duration(ANIMATION_DELAY)
@@ -273,7 +320,7 @@ class App extends React.Component {
             .attr("fill", e => {
                 const currentReported = dailyDict[areaCodeToGmCode(e.properties.areaCode)];
                 if (currentReported === undefined) {
-                    return "grey";
+                    return "rgb(170, 170, 170)";
                 }
 
                 if (currentReported === null) {
@@ -286,7 +333,6 @@ class App extends React.Component {
 
     componentDidUpdate() {
         if (this.state.selectedDayNr >= this.state.numberOfDays) {
-            console.log("Setting state to 0")
             this.setState({
                 selectedDayNr: 0,
                 isPlaying: false
@@ -306,7 +352,11 @@ class App extends React.Component {
 
 
     render() {
-        if (this.state.populationData !== null) {
+        if (
+            (this.state.populationData !== null) &&
+            (this.state.nlGeoJson !== null) &&
+            (this.state.covidDataGroupedByDay !== null)
+        ) {
             this.redraw(this.state.selectedDayNr);
         }
 
@@ -329,11 +379,11 @@ class App extends React.Component {
                     tooltip='auto'
                     aria-label="Calendar day"
                     tooltipLabel={i => {
-                        if (this.state.dailyReportedByDay === null) {
+                        if (this.state.covidDataGroupedByDay === null) {
                             return null;
                         }
                         else {
-                            return [...this.state.dailyReportedByDay.keys()][i]
+                            return [...this.state.covidDataGroupedByDay.keys()][i]
                         }
                     }}
                     size={'sm'}
