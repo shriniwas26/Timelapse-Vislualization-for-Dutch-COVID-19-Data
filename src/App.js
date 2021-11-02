@@ -14,7 +14,7 @@ const PER_POPULATION = 1E5;
 const REPORTED_FIELD = "Total_reported";
 const DAILY_REPORTED_FIELD = "Daily_" + REPORTED_FIELD;
 const DAILY_REPORTED_FIELD_MA = "Daily_" + REPORTED_FIELD + "_ma";
-const MOVING_AVG_WINDOW = 7;
+const MOVING_AVG_WINDOW = 10;
 
 const areaCodeToGmCode = (x) => {
     return "GM" + x.toString().padStart(4, '0');
@@ -310,8 +310,6 @@ class App extends React.Component {
             .duration(ANIMATION_DELAY)
             .text(`Day: ${dayKey}`)
             ;
-
-        const toolDiv = d3.select("#chartArea").selectAll("div");
 
         this.state.covidMap
             .transition()
