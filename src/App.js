@@ -8,8 +8,8 @@ import Moment from 'moment'
 import Button from 'react-bootstrap/Button'
 
 // import Slider from 'react-rangeslider'
-
-const ANIMATION_DELAY = 50;
+const DATA_URL = "https://data.rivm.nl/covid-19/COVID-19_aantallen_gemeente_cumulatief.csv"
+const ANIMATION_DELAY = 40;
 const PER_POPULATION = 1E5;
 const REPORTED_FIELD = "Total_reported";
 const DAILY_REPORTED_FIELD = "Daily_" + REPORTED_FIELD;
@@ -59,7 +59,7 @@ class App extends React.Component {
         const urls = [
             "data/nl.json",
             "data/NL_Population_Latest.csv",
-            "data/COVID-19_aantallen_gemeente_cumulatief.csv"
+            DATA_URL
         ]
 
         Promise.all(urls.map(url =>
@@ -130,12 +130,11 @@ class App extends React.Component {
                 const medVal = d3.mean(
                     populationAdjustedCovidData.map(e => e[DAILY_REPORTED_FIELD_MA]))
 
-
                 const covidDataGroupedByDay = d3.group(populationAdjustedCovidData, x => x["Date_of_report"]);
 
                 let projection = d3.geoMercator()
                     .scale(5000)
-                    .center([7, 52]);
+                    .center([6, 52]);
 
                 const svg = d3.select(this.ref.current);
 
@@ -194,7 +193,7 @@ class App extends React.Component {
                     .attr("class", "legendTitle")
                     .attr("x", 0)
                     .attr("y", 2)
-                    .text(`Number of cases per ${PER_POPULATION} people`);
+                    .text(`Number of cases per ${PER_POPULATION/1000}k people`);
 
                 const legendScale = d3.scaleLinear()
                     .range([0, 150])
@@ -363,6 +362,9 @@ class App extends React.Component {
                 id="chartArea"
                 className="m-5 w-50 col-12 justify-content-center"
             >
+                <p className='fw-bold'>
+                    {this.state.covidDataGroupedByDay === null ? "Loading... Please wait!" : ""}
+                </p>
                 <svg ref={this.ref}>
                 </svg>
                 <br />
@@ -408,11 +410,33 @@ class App extends React.Component {
                     className='m-1'
                     onClick={() => {
                         this.setState({
+                            selectedDayNr: (this.state.selectedDayNr - 1) % this.state.numberOfDays,
+                            isPlaying: false
+                        })
+                    }}
+                >
+                    Previous
+                </Button>
+                <Button
+                    className='m-1'
+                    onClick={() => {
+                        this.setState({
                             isPlaying: !this.state.isPlaying
                         });
                     }}
                 >
                     Play/Pause
+                </Button>
+                <Button
+                    className='m-1'
+                    onClick={() => {
+                        this.setState({
+                            selectedDayNr: this.state.selectedDayNr + 1,
+                            isPlaying: false
+                        })
+                    }}
+                >
+                    Next
                 </Button>
             </div>
 
