@@ -8,7 +8,7 @@ import Moment from 'moment'
 import Button from 'react-bootstrap/Button'
 
 // import Slider from 'react-rangeslider'
-const DATA_URL = "https://data.rivm.nl/covid-19/COVID-19_aantallen_gemeente_cumulatief.csv"
+// const DATA_URL = "https://data.rivm.nl/covid-19/COVID-19_aantallen_gemeente_cumulatief.csv"
 const ANIMATION_DELAY = 40;
 const PER_POPULATION = 1E5;
 const REPORTED_FIELD = "Total_reported";
@@ -59,7 +59,7 @@ class App extends React.Component {
         const urls = [
             "data/nl.json",
             "data/NL_Population_Latest.csv",
-            DATA_URL
+            "data/COVID-19_aantallen_gemeente_cumulatief.csv"
         ]
 
         Promise.all(urls.map(url =>
@@ -193,7 +193,7 @@ class App extends React.Component {
                     .attr("class", "legendTitle")
                     .attr("x", 0)
                     .attr("y", 2)
-                    .text(`Number of cases per ${PER_POPULATION/1000}k people`);
+                    .text(`Number of cases per ${PER_POPULATION / 1000}k people`);
 
                 const legendScale = d3.scaleLinear()
                     .range([0, 150])
