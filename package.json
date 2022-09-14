@@ -9,6 +9,7 @@
     "bootstrap": "^5.2.1",
     "d3": "^7.6.1",
     "moment": "^2.29.1",
+    "plotly": "^1.0.6",
     "react": "^18.2.0",
     "react-bootstrap": "^2.5.0",
     "react-bootstrap-range-slider": "^3.0.2",
