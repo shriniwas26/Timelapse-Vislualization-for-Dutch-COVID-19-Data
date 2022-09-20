@@ -1,11 +1,12 @@
 import './App.css';
-import React, { } from 'react'
+import React, { } from 'react';
 import * as d3 from 'd3';
-import 'bootstrap/dist/css/bootstrap.css'; // or include from a CDN
+import 'bootstrap/dist/css/bootstrap.css';
 import 'react-bootstrap-range-slider/dist/react-bootstrap-range-slider.css';
+import { Spinner, Badge } from 'react-bootstrap';
 import RangeSlider from 'react-bootstrap-range-slider';
-import Moment from 'moment'
-import Button from 'react-bootstrap/Button'
+import Moment from 'moment';
+import Button from 'react-bootstrap/Button';
 
 // import Slider from 'react-rangeslider'
 // const DATA_URL = "https://data.rivm.nl/covid-19/COVID-19_aantallen_gemeente_cumulatief.csv"
@@ -14,11 +15,11 @@ const PER_POPULATION = 1E5;
 const REPORTED_FIELD = "Total_reported";
 const DAILY_REPORTED_FIELD = "Daily_" + REPORTED_FIELD;
 const DAILY_REPORTED_FIELD_MA = "Daily_" + REPORTED_FIELD + "_ma";
-const MOVING_AVG_WINDOW = 10;
+const MOVING_AVG_WINDOW = 14;
 
 const areaCodeToGmCode = (x) => {
     return "GM" + x.toString().padStart(4, '0');
-}
+};
 
 const movingAvg = (inputArr, maWin) => {
     const tempArr = Array(inputArr.length);
@@ -34,7 +35,7 @@ const movingAvg = (inputArr, maWin) => {
         tempArr[i] = tempArr[i] / n;
     }
     return tempArr;
-}
+};
 
 class App extends React.Component {
 
@@ -52,15 +53,15 @@ class App extends React.Component {
             colorScale: null,
             covidMap: null,
             isPlaying: false
-        }
+        };
     }
 
     componentDidMount() {
         const urls = [
-            "data/nl.json",
+            "data/nl-compact.json",
             "data/NL_Population_Latest.csv",
             "data/COVID-19_aantallen_gemeente_cumulatief.csv"
-        ]
+        ];
 
         Promise.all(urls.map(url =>
             fetch(url)
@@ -82,7 +83,7 @@ class App extends React.Component {
                         return [
                             elem["Regions"],
                             elem["PopulationOn31December_20"]
-                        ]
+                        ];
                     })
                 );
 
@@ -126,21 +127,17 @@ class App extends React.Component {
                 });
 
                 const maxVal = 100 * Math.ceil(1 / 100 * d3.max(
-                    populationAdjustedCovidData.map(e => e[DAILY_REPORTED_FIELD_MA])))
+                    populationAdjustedCovidData.map(e => e[DAILY_REPORTED_FIELD_MA])));
                 const medVal = d3.mean(
-                    populationAdjustedCovidData.map(e => e[DAILY_REPORTED_FIELD_MA]))
+                    populationAdjustedCovidData.map(e => e[DAILY_REPORTED_FIELD_MA]));
 
                 const covidDataGroupedByDay = d3.group(populationAdjustedCovidData, x => x["Date_of_report"]);
-
-                let projection = d3.geoMercator()
-                    .scale(5000)
-                    .center([6, 52]);
 
                 const svg = d3.select(this.ref.current);
 
                 populationData.forEach(e => {
-                    populationData[e["Regions"]] = + e["PopulationOn1January_1"]
-                })
+                    populationData[e["Regions"]] = + e["PopulationOn1January_1"];
+                });
 
                 const colorScale = d3.scaleLinear()
                     .domain([0, medVal, maxVal])
@@ -193,7 +190,7 @@ class App extends React.Component {
                     .attr("class", "legendTitle")
                     .attr("x", 0)
                     .attr("y", 2)
-                    .text(`Number of cases per ${PER_POPULATION / 1000}k people`);
+                    .text(`Cases per ${PER_POPULATION / 1000}k people`);
 
                 const legendScale = d3.scaleLinear()
                     .range([0, 150])
@@ -226,6 +223,9 @@ class App extends React.Component {
                     ;
 
                 // Draw the map
+                let projection = d3.geoMercator()
+                    .fitSize([window.innerWidth / 2, window.innerHeight / 2], nlGeoJson);
+
                 const covidMap = svg.append("g")
                     .attr("id", "path-group")
                     .selectAll("path")
@@ -238,6 +238,10 @@ class App extends React.Component {
                     .attr("d", d3.geoPath()
                         .projection(projection)
                     )
+                    .attr(
+                        "transform",
+                        "translate(50, 0)"
+                    )
                     .attr("id", d => areaCodeToGmCode(d.properties.areaCode))
                     .on("mouseover", (e, d) => {
                         d3
@@ -246,12 +250,12 @@ class App extends React.Component {
 
                         toolDiv
                             .style("visibility", "visible")
-                            .text(`Municiaplity: ${d.properties.areaName}`)
+                            .text(`Municipality: ${d.properties.areaName}`);
                     })
                     .on('mousemove', (e, d) => {
                         toolDiv
                             .style('top', (e.pageY - 50) + 'px')
-                            .style('left', (e.pageX - 50) + 'px')
+                            .style('left', (e.pageX - 50) + 'px');
                     })
                     .on('mouseout', (e) => {
                         toolDiv.style('visibility', 'hidden');
@@ -275,8 +279,8 @@ class App extends React.Component {
 
 
         const svg = d3.select(this.ref.current)
-            .attr("width", 600)
-            .attr("height", 450);
+            .attr("width", "100%")
+            .attr("height", "50vh");
 
         svg
             .append("p")
@@ -302,14 +306,6 @@ class App extends React.Component {
             dailyDict[e["Municipality_code"]] = e[DAILY_REPORTED_FIELD_MA];
         });
 
-        const svg = d3.select(this.ref.current);
-
-        svg.select("text")
-            .transition()
-            .duration(ANIMATION_DELAY)
-            .text(`Day: ${dayKey}`)
-            ;
-
         this.state.covidMap
             .transition()
             .duration(ANIMATION_DELAY)
@@ -326,14 +322,14 @@ class App extends React.Component {
 
                 return this.state.colorScale(currentReported);
             });
-    } // end redraw()
+    }; // end redraw()
 
     componentDidUpdate() {
         if (this.state.selectedDayNr >= this.state.numberOfDays) {
             this.setState({
                 selectedDayNr: 0,
                 isPlaying: false
-            })
+            });
         }
 
         if (this.state.isPlaying) {
@@ -341,7 +337,7 @@ class App extends React.Component {
                 setTimeout(() => {
                     this.setState({
                         selectedDayNr: this.state.selectedDayNr + 1
-                    })
+                    });
                 }, 40);
             }
         }
@@ -360,87 +356,104 @@ class App extends React.Component {
         return (
             <div
                 id="chartArea"
-                className="m-5 w-50 col-12 justify-content-center"
+                className="m-5 w-75 h-75 col-12 justify-content-center"
             >
-                <p className='fw-bold'>
-                    {this.state.covidDataGroupedByDay === null ? "Loading... Please wait!" : ""}
-                </p>
-                <svg ref={this.ref}>
+                <p><Badge bg="primary">{
+                    this.state.covidDataGroupedByDay === null ? "" :
+                    [...this.state.covidDataGroupedByDay.keys()][this.state.selectedDayNr]
+                }
+                </Badge></p>
+                {
+                    this.state.covidDataGroupedByDay === null ?
+                        <div style={{ "height": "90%" }}>
+                            <Spinner
+                                animation="border"
+                                role="status"
+                                size="lg"
+                                variant="primary"
+                            >
+                                <span className="visually-hidden">Loading...</span>
+                            </Spinner>
+                        </div> :
+                        <div style={{ "visibility": "hidden" }}></div>
+                }
+                <svg ref={this.ref} className="m-1 w-75 col-12">
                 </svg>
                 <br />
-                <RangeSlider
-                    className='justify-content-center'
-                    style={{ align: "center" }}
-                    min={0}
-                    max={this.state.numberOfDays - 1}
-                    step={1}
-                    value={this.state.selectedDayNr}
-                    tooltipPlacement={"top"}
-                    tooltip='auto'
-                    aria-label="Calendar day"
-                    tooltipLabel={i => {
-                        if (this.state.covidDataGroupedByDay === null) {
-                            return null;
-                        }
-                        else {
-                            return [...this.state.covidDataGroupedByDay.keys()][i]
-                        }
-                    }}
-                    size={'sm'}
-                    onChange={(changeEvent) => {
-                        this.setState({
-                            selectedDayNr: parseInt(changeEvent.target.value),
-                            isPlaying: false
-                        });
-                    }}
-                />
-                <br />
-                <Button
-                    className='m-1'
-                    onClick={() => {
-                        this.setState({
-                            selectedDayNr: 0,
-                            isPlaying: false
-                        })
-                    }}
-                >
-                    Reset
-                </Button>
-                <Button
-                    className='m-1'
-                    onClick={() => {
-                        this.setState({
-                            selectedDayNr: (this.state.selectedDayNr - 1) % this.state.numberOfDays,
-                            isPlaying: false
-                        })
-                    }}
-                >
-                    Previous
-                </Button>
-                <Button
-                    className='m-1'
-                    onClick={() => {
-                        this.setState({
-                            isPlaying: !this.state.isPlaying
-                        });
-                    }}
-                >
-                    Play/Pause
-                </Button>
-                <Button
-                    className='m-1'
-                    onClick={() => {
-                        this.setState({
-                            selectedDayNr: this.state.selectedDayNr + 1,
-                            isPlaying: false
-                        })
-                    }}
-                >
-                    Next
-                </Button>
+                <div className='m-5 w-50 col-12 justify-content-center'>
+                    <RangeSlider
+                        style={{ align: "center" }}
+                        min={0}
+                        max={this.state.numberOfDays - 1}
+                        step={1}
+                        value={this.state.selectedDayNr}
+                        tooltipPlacement={"top"}
+                        tooltip='auto'
+                        aria-label="Calendar day"
+                        tooltipLabel={i => {
+                            if (this.state.covidDataGroupedByDay === null) {
+                                return null;
+                            }
+                            else {
+                                return [...this.state.covidDataGroupedByDay.keys()][i];
+                            }
+                        }}
+                        size={'sm'}
+                        onChange={(changeEvent) => {
+                            this.setState({
+                                selectedDayNr: parseInt(changeEvent.target.value),
+                                isPlaying: false
+                            });
+                        }}
+                    />
+                    <br />
+                    <Button
+                        className='m-1'
+                        onClick={() => {
+                            this.setState({
+                                selectedDayNr: 0,
+                                isPlaying: false
+                            });
+                        }}
+                    >
+                        Reset
+                    </Button>
+                    <Button
+                        className='m-1'
+                        onClick={() => {
+                            this.setState({
+                                selectedDayNr: (this.state.selectedDayNr - 1) % this.state.numberOfDays,
+                                isPlaying: false
+                            });
+                        }}
+                    >
+                        Previous
+                    </Button>
+                    <Button
+                        className='m-1'
+                        onClick={() => {
+                            this.setState({
+                                isPlaying: !this.state.isPlaying
+                            });
+                        }}
+                    >
+                        Play/Pause
+                    </Button>
+                    <Button
+                        className='m-1'
+                        onClick={() => {
+                            this.setState({
+                                selectedDayNr: this.state.selectedDayNr + 1,
+                                isPlaying: false
+                            });
+                        }}
+                    >
+                        Next
+                    </Button>
+                </div>
             </div>
 
-        )
+        );
     }
 }
 
