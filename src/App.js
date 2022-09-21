@@ -8,7 +8,7 @@ import { Spinner, Badge } from 'react-bootstrap';
 import RangeSlider from 'react-bootstrap-range-slider';
 import Moment from 'moment';
 import Button from 'react-bootstrap/Button';
-var _ = require('lodash');
+let _ = require('lodash');
 
 // import Slider from 'react-rangeslider'
 // const DATA_URL = "https://data.rivm.nl/covid-19/COVID-19_aantallen_gemeente_cumulatief.csv"
