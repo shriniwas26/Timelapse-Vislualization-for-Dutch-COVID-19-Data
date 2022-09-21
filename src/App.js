@@ -41,7 +41,7 @@ class App extends React.Component {
 
     constructor(props) {
         super(props);
-        this.ref = React.createRef();
+        this.svgRef = React.createRef();
         this.state = {
             populationData: null,
             nlGeoJson: null,
@@ -62,6 +62,8 @@ class App extends React.Component {
             "data/NL_Population_Latest.csv",
             "data/COVID-19_aantallen_gemeente_cumulatief.csv"
         ];
+
+        window.addEventListener('resize', this.resizeMap);
 
         Promise.all(urls.map(url =>
             fetch(url)
@@ -133,7 +135,7 @@ class App extends React.Component {
 
                 const covidDataGroupedByDay = d3.group(populationAdjustedCovidData, x => x["Date_of_report"]);
 
-                const svg = d3.select(this.ref.current);
+                const svg = d3.select(this.svgRef.current);
 
                 populationData.forEach(e => {
                     populationData[e["Regions"]] = + e["PopulationOn1January_1"];
@@ -223,7 +225,7 @@ class App extends React.Component {
                     ;
 
                 // Draw the map
-                let projection = d3.geoMercator()
+                const projection = d3.geoMercator()
                     .fitSize([window.innerWidth / 2, window.innerHeight / 2], nlGeoJson);
 
                 const covidMap = svg.append("g")
@@ -240,7 +242,7 @@ class App extends React.Component {
                     )
                     .attr(
                         "transform",
-                        "translate(50, 0)"
+                        `translate(${0.05 * window.innerWidth}, 0)`
                     )
                     .attr("id", d => areaCodeToGmCode(d.properties.areaCode))
                     .on("mouseover", (e, d) => {
@@ -278,7 +280,7 @@ class App extends React.Component {
             });
 
 
-        const svg = d3.select(this.ref.current)
+        const svg = d3.select(this.svgRef.current)
             .attr("width", "100%")
             .attr("height", "50vh");
 
@@ -291,7 +293,18 @@ class App extends React.Component {
         // .style("border", "5px solid grey")
     }
 
-    redraw = (dayNumber) => {
+    resizeMap = () => {
+        const projection = d3.geoMercator()
+            .fitSize([window.innerWidth / 2, window.innerHeight / 2], this.state.nlGeoJson);
+
+        this.state.covidMap
+            .transition()
+            .duration(0)
+            .attr("d", d3.geoPath().projection(projection));
+    };
+
+
+    redrawDay = (dayNumber) => {
 
         const selectedDayIdx = Math.min(
             Math.max(0, dayNumber),
@@ -350,7 +363,7 @@ class App extends React.Component {
             (this.state.nlGeoJson !== null) &&
             (this.state.covidDataGroupedByDay !== null)
         ) {
-            this.redraw(this.state.selectedDayNr);
+            this.redrawDay(this.state.selectedDayNr);
         }
 
         return (
@@ -360,7 +373,7 @@ class App extends React.Component {
             >
                 <p><Badge bg="primary">{
                     this.state.covidDataGroupedByDay === null ? "" :
-                    [...this.state.covidDataGroupedByDay.keys()][this.state.selectedDayNr]
+                        [...this.state.covidDataGroupedByDay.keys()][this.state.selectedDayNr]
                 }
                 </Badge></p>
                 {
@@ -377,7 +390,7 @@ class App extends React.Component {
                         </div> :
                         <div style={{ "visibility": "hidden" }}></div>
                 }
-                <svg ref={this.ref} className="m-1 w-75 col-12">
+                <svg ref={this.svgRef} className="m-1 w-75 col-12">
                 </svg>
                 <br />
                 <div className='m-5 w-50 col-12 justify-content-center'>
