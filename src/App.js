@@ -295,7 +295,6 @@ class App extends React.Component {
     }
 
     resizeMap = () => {
-        console.log("Resizing...");
         const projection = d3.geoMercator()
             .fitSize([window.innerWidth / 2, window.innerHeight / 2], this.state.nlGeoJson);
 
