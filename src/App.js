@@ -3,6 +3,7 @@ import React, { } from 'react';
 import * as d3 from 'd3';
 import 'bootstrap/dist/css/bootstrap.css';
 import 'react-bootstrap-range-slider/dist/react-bootstrap-range-slider.css';
+import "bootstrap/dist/js/bootstrap.bundle.min";
 import { Spinner, Badge } from 'react-bootstrap';
 import RangeSlider from 'react-bootstrap-range-slider';
 import Moment from 'moment';
@@ -394,7 +395,7 @@ class App extends React.Component {
                 <svg ref={this.svgRef} className="m-1 w-75 col-12">
                 </svg>
                 <br />
-                <div className='m-5 w-75 col-12 justify-content-center'>
+                <div className='m-5 w-50 col-12 justify-content-center'>
                     <RangeSlider
                         style={{ align: "center" }}
                         min={0}
