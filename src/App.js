@@ -7,6 +7,7 @@ import { Spinner, Badge } from 'react-bootstrap';
 import RangeSlider from 'react-bootstrap-range-slider';
 import Moment from 'moment';
 import Button from 'react-bootstrap/Button';
+var _ = require('lodash');
 
 // import Slider from 'react-rangeslider'
 // const DATA_URL = "https://data.rivm.nl/covid-19/COVID-19_aantallen_gemeente_cumulatief.csv"
@@ -63,7 +64,7 @@ class App extends React.Component {
             "data/COVID-19_aantallen_gemeente_cumulatief.csv"
         ];
 
-        window.addEventListener('resize', this.resizeMap);
+        window.addEventListener('resize', _.throttle(this.resizeMap, 1000));
 
         Promise.all(urls.map(url =>
             fetch(url)
@@ -294,6 +295,7 @@ class App extends React.Component {
     }
 
     resizeMap = () => {
+        console.log("Resizing...");
         const projection = d3.geoMercator()
             .fitSize([window.innerWidth / 2, window.innerHeight / 2], this.state.nlGeoJson);
 
@@ -393,7 +395,7 @@ class App extends React.Component {
                 <svg ref={this.svgRef} className="m-1 w-75 col-12">
                 </svg>
                 <br />
-                <div className='m-5 w-50 col-12 justify-content-center'>
+                <div className='m-5 w-75 col-12 justify-content-center'>
                     <RangeSlider
                         style={{ align: "center" }}
                         min={0}
