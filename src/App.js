@@ -10,8 +10,6 @@ import Moment from 'moment';
 import Button from 'react-bootstrap/Button';
 let _ = require('lodash');
 
-// import Slider from 'react-rangeslider'
-// const DATA_URL = "https://data.rivm.nl/covid-19/COVID-19_aantallen_gemeente_cumulatief.csv"
 const ANIMATION_DELAY = 40;
 const PER_POPULATION = 1E5;
 const REPORTED_FIELD = "Total_reported";
@@ -283,7 +281,6 @@ class App extends React.Component {
 
 
         const svg = d3.select(this.svgRef.current)
-            .attr("width", "100%")
             .attr("height", "50vh");
 
         svg
@@ -296,6 +293,7 @@ class App extends React.Component {
     }
 
     resizeMap = () => {
+        console.debug(`Resizing map to ${window.innerWidth} x ${window.innerHeight} screen-size`);
         const projection = d3.geoMercator()
             .fitSize([window.innerWidth / 2, window.innerHeight / 2], this.state.nlGeoJson);
 
@@ -371,7 +369,7 @@ class App extends React.Component {
         return (
             <div
                 id="chartArea"
-                className="m-5 w-75 h-75 col-12 justify-content-center"
+                className="m-5 w-75 col-12 justify-content-center"
             >
                 <p><Badge bg="primary">{
                     this.state.covidDataGroupedByDay === null ? "" :
