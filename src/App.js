@@ -43,6 +43,7 @@ class App extends React.Component {
         super(props);
         this.svgRef = React.createRef();
         this.state = {
+            // Data
             populationData: null,
             nlGeoJson: null,
             covidDataGroupedByDay: null,
@@ -51,7 +52,6 @@ class App extends React.Component {
             selectedDayNr: 1,
             numberOfDays: null,
             colorScale: null,
-            covidMap: null,
             isPlaying: false
         };
     }
@@ -63,7 +63,7 @@ class App extends React.Component {
             "data/COVID-19_aantallen_gemeente_cumulatief.csv"
         ];
 
-        window.addEventListener('resize', _.throttle(this.resizeMap, 1000));
+        window.addEventListener('resize', _.throttle(this.resizeMap, 1500));
 
         Promise.all(urls.map(url =>
             fetch(url)
@@ -136,6 +136,7 @@ class App extends React.Component {
                 const covidDataGroupedByDay = d3.group(populationAdjustedCovidData, x => x["Date_of_report"]);
 
                 const svg = d3.select(this.svgRef.current);
+                svg.empty();
 
                 populationData.forEach(e => {
                     populationData[e["Regions"]] = + e["PopulationOn1January_1"];
@@ -167,51 +168,52 @@ class App extends React.Component {
                     .attr("offset", d => d.offset)
                     .attr("stop-color", d => d.color);
 
-                const legendsvg = svg
-                    .append("g")
-                    .attr("id", "legend")
-                    .attr(
-                        "transform",
-                        "translate(10, 50)"
-                    );
+                // const legendsvg = svg
+                //     .append("g")
+                //     .attr("id", "legend-group")
+                //     .attr(
+                //         "transform",
+                //         "translate(10, 50)"
+                //     );
 
                 //Draw the Rectangle
-                legendsvg
-                    .append("rect")
-                    .attr("class", "legendRect")
-                    .attr("x", 0)
-                    .attr("y", 10)
-                    .attr("width", 150)
-                    .attr("height", 10)
-                    .style("fill", "url(#linear-gradient)")
-                    .style("stroke", "black")
-                    .style("stroke-width", 0.5);
+                // legendsvg
+                //     .append("rect")
+                //     .attr("class", "legendRect")
+                //     .attr("x", 0)
+                //     .attr("y", 10)
+                //     .attr("width", 150)
+                //     .attr("height", 10)
+                //     .style("fill", "url(#linear-gradient)")
+                //     .style("stroke", "black")
+                //     .style("stroke-width", 0.5)
+                //     ;
 
-                legendsvg
-                    .append("text")
-                    .attr("class", "legendTitle")
-                    .attr("x", 0)
-                    .attr("y", 2)
-                    .text(`Cases per ${PER_POPULATION / 1000}k people`);
+                // legendsvg
+                //     .append("text")
+                //     .attr("class", "legendTitle")
+                //     .attr("x", 0)
+                //     .attr("y", 2)
+                //     .text(`Cases per ${PER_POPULATION / 1000}k people`);
 
                 const legendScale = d3.scaleLinear()
                     .range([0, 150])
                     .domain([0, maxVal]);
 
                 // x-axis
-                legendsvg
-                    .append("g")
-                    .call(
-                        d3
-                            .axisBottom(legendScale)
-                            .tickValues([0, medVal, maxVal])
-                    )
-                    .attr("class", "legendAxis")
-                    .attr("id", "legendAxis")
-                    .attr(
-                        "transform",
-                        "translate(0, 20)"
-                    );
+                // legendsvg
+                //     .append("g")
+                //     .call(
+                //         d3
+                //             .axisBottom(legendScale)
+                //             .tickValues([0, medVal, maxVal])
+                //     )
+                //     .attr("class", "legendAxis")
+                //     .attr("id", "legendAxis")
+                //     .attr(
+                //         "transform",
+                //         "translate(0, 20)"
+                //     );
 
                 const toolDiv = d3.select("#chartArea")
                     .append("div")
@@ -228,9 +230,11 @@ class App extends React.Component {
                 const projection = d3.geoMercator()
                     .fitSize([window.innerWidth / 2, window.innerHeight / 2], nlGeoJson);
 
-                const covidMap = svg.append("g")
+                svg.append("g")
                     .attr("id", "path-group")
+                    .classed("nl-map", true)
                     .selectAll("path")
+                    .join()
                     .data(nlGeoJson.features)
                     .enter()
                     .append("path")
@@ -264,8 +268,7 @@ class App extends React.Component {
                         d3
                             .select(e.target)
                             .attr("stroke-width", 1.0);
-                    })
-                    ;
+                    });
 
                 this.setState({
                     nlGeoJson: nlGeoJson,
@@ -274,14 +277,13 @@ class App extends React.Component {
                     covidDataGroupedByDay: covidDataGroupedByDay,
                     numberOfDays: covidDataGroupedByDay.size,
                     colorScale: colorScale,
-                    covidMap: covidMap
                 });
 
             });
 
 
         const svg = d3.select(this.svgRef.current)
-            .attr("height", "50vh");
+            .attr("height", "60vh");
 
         svg
             .append("p")
@@ -297,8 +299,11 @@ class App extends React.Component {
         const projection = d3.geoMercator()
             .fitSize([window.innerWidth / 2, window.innerHeight / 2], this.state.nlGeoJson);
 
-        this.state.covidMap
-            .transition()
+
+        d3.select(this.svgRef.current)
+            .selectAll(".nl-map path")
+            .join()
+            .transition(ANIMATION_DELAY)
             .duration(0)
             .attr("d", d3.geoPath().projection(projection));
     };
@@ -319,7 +324,8 @@ class App extends React.Component {
             dailyDict[e["Municipality_code"]] = e[DAILY_REPORTED_FIELD_MA];
         });
 
-        this.state.covidMap
+        d3.select(this.svgRef.current)
+            .selectAll("#path-group path")
             .transition()
             .duration(ANIMATION_DELAY)
             .ease(d3.easePoly)
@@ -330,7 +336,7 @@ class App extends React.Component {
                 }
 
                 if (currentReported === null) {
-                    return "black";
+                    return "rgb(255, 255, 255)";
                 }
 
                 return this.state.colorScale(currentReported);
