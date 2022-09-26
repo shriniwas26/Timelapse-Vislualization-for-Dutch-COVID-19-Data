@@ -8,11 +8,9 @@ Access my site at [covid-data-nl.netlify.app](https://covid-data-nl.netlify.app/
 
 - [About The App](#about-the-app)
 - [Screenshots](#screenshots)
-<!-- - [Technologies](#technologies) -->
 - [Setup](#setup)
 - [Approach](#approach)
 - [Status](#status)
-<!-- - [Credits](#credits) -->
 - [License](#license)
 
 ## About The App
