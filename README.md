@@ -40,7 +40,7 @@ I built this app as a fun exercise in teaching myself React.js and D3.js.
 
 ## Status
 
-This app is being developed. In version 2.0 I am trying to bring the following changes
+This app is being developed. In version 2.0 I am plan to bring the following changes
 
 - Move class based components to functional ones.
 - Better splitting.
