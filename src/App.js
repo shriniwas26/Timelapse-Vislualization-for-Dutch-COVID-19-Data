@@ -60,7 +60,7 @@ class App extends React.Component {
         const urls = [
             "data/nl-compact.json",
             "data/NL_Population_Latest.csv",
-            "data/COVID-19_aantallen_gemeente_cumulatief.csv"
+            "data/COVID-19_aantallen_gemeente_cumulatief_min.csv"
         ];
 
         window.addEventListener('resize', _.throttle(this.resizeMap, 1500));
@@ -72,7 +72,7 @@ class App extends React.Component {
             .then(([nlGeoJsonText, populationDataText, covidDataText]) => {
                 const nlGeoJson = JSON.parse(nlGeoJsonText);
                 const covidData = d3.csvParse(
-                    covidDataText.replaceAll(";", ","),
+                    covidDataText,
                     d3.autoType
                 );
                 const populationData = d3.csvParse(
