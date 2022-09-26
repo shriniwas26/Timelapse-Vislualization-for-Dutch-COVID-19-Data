@@ -197,8 +197,8 @@ class App extends React.Component {
                 //     .text(`Cases per ${PER_POPULATION / 1000}k people`);
 
                 const legendScale = d3.scaleLinear()
-                    .range([0, 150])
-                    .domain([0, maxVal]);
+                    .range([0, 75, 150])
+                    .domain([0, medVal, maxVal]);
 
                 // x-axis
                 // legendsvg
