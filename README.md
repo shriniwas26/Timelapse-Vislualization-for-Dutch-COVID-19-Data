@@ -1,70 +1,54 @@
-# Getting Started with Create React App
+# Timelapse of COVID-19 data in the Netherlands
 
-This project was bootstrapped with [Create React App](https://github.com/facebook/create-react-app).
+## Demo Link
 
-## Available Scripts
+Access my site at [covid-data-nl.netlify.app](https://covid-data-nl.netlify.app/).
 
-In the project directory, you can run:
+## Table of Contents
 
-### `yarn start`
+- [About The App](#about-the-app)
+- [Screenshots](#screenshots)
+- [Technologies](#technologies)
+- [Setup](#setup)
+- [Approach](#approach)
+- [Status](#status)
+- [Credits](#credits)
+- [License](#license)
 
-Runs the app in the development mode.\
-Open [http://localhost:3000](http://localhost:3000) to view it in the browser.
+## About The App
 
-The page will reload if you make edits.\
-You will also see any lint errors in the console.
+This app visualized COVID-19 data in the Netherlands, as published by the National Institute for Public Health and the Environment (Rijksinstituut voor Volksgezondheid en Milieu) or [RIVM](https://www.rivm.nl/).
 
-### `yarn test`
+I built this app as a fun exercise in teaching myself React.js and D3.js.
 
-Launches the test runner in the interactive watch mode.\
-See the section about [running tests](https://facebook.github.io/create-react-app/docs/running-tests) for more information.
+## Screenshots
 
-### `yarn build`
+![alt text](public/Screenshot_1.png "Screenshot 1")
+![alt text](public/Screenshot_2.png "Screenshot 2")
 
-Builds the app for production to the `build` folder.\
-It correctly bundles React in production mode and optimizes the build for the best performance.
+## Setup
 
-The build is minified and the filenames include the hashes.\
-Your app is ready to be deployed!
+- Download or clone the repository
+- Run `yarn install`
+- Run `yarn start`
+- Rest of the insturctions are described in the standard README that comes with the `start-react-app` template in [this file](README.old.md)
 
-See the section about [deployment](https://facebook.github.io/create-react-app/docs/deployment) for more information.
+## Approach
 
-### `yarn eject`
+- I've used the data as published by RIVM.
+- Basic data cleaning operations are done.
+- I've used (slightly old) population data per municipality to compute the case rate per day for each municipality. (v/s Absolute values published.)
+- For smoothness of animation, it actually renders a 14-day moving average.
 
-**Note: this is a one-way operation. Once you `eject`, you can’t go back!**
+## Status
 
-If you aren’t satisfied with the build tool and configuration choices, you can `eject` at any time. This command will remove the single build dependency from your project.
+This app is being developed. In version 2.0 I am trying to bring the following changes
 
-Instead, it will copy all the configuration files and the transitive dependencies (webpack, Babel, ESLint, etc) right into your project so you have full control over them. All of the commands except `eject` will still work, but they will point to the copied scripts so you can tweak them. At this point you’re on your own.
+- Move class based components to functional ones.
+- Better splitting.
+- Zooming in & out in the map.
+- Support to display other metrics, e.g. Hospitalization, and Mortality.
 
-You don’t have to ever use `eject`. The curated feature set is suitable for small and middle deployments, and you shouldn’t feel obligated to use this feature. However we understand that this tool wouldn’t be useful if you couldn’t customize it when you are ready for it.
+## License
 
-## Learn More
-
-You can learn more in the [Create React App documentation](https://facebook.github.io/create-react-app/docs/getting-started).
-
-To learn React, check out the [React documentation](https://reactjs.org/).
-
-### Code Splitting
-
-This section has moved here: [https://facebook.github.io/create-react-app/docs/code-splitting](https://facebook.github.io/create-react-app/docs/code-splitting)
-
-### Analyzing the Bundle Size
-
-This section has moved here: [https://facebook.github.io/create-react-app/docs/analyzing-the-bundle-size](https://facebook.github.io/create-react-app/docs/analyzing-the-bundle-size)
-
-### Making a Progressive Web App
-
-This section has moved here: [https://facebook.github.io/create-react-app/docs/making-a-progressive-web-app](https://facebook.github.io/create-react-app/docs/making-a-progressive-web-app)
-
-### Advanced Configuration
-
-This section has moved here: [https://facebook.github.io/create-react-app/docs/advanced-configuration](https://facebook.github.io/create-react-app/docs/advanced-configuration)
-
-### Deployment
-
-This section has moved here: [https://facebook.github.io/create-react-app/docs/deployment](https://facebook.github.io/create-react-app/docs/deployment)
-
-### `yarn build` fails to minify
-
-This section has moved here: [https://facebook.github.io/create-react-app/docs/troubleshooting#npm-run-build-fails-to-minify](https://facebook.github.io/create-react-app/docs/troubleshooting#npm-run-build-fails-to-minify)
+MIT License.
