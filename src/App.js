@@ -1,6 +1,7 @@
 import './App.css';
 import React, { } from 'react';
 import * as d3 from 'd3';
+import * as fc from 'd3fc';
 import 'bootstrap/dist/css/bootstrap.css';
 import 'react-bootstrap-range-slider/dist/react-bootstrap-range-slider.css';
 import "bootstrap/dist/js/bootstrap.bundle.min";
@@ -20,6 +21,8 @@ const MOVING_AVG_WINDOW = 14;
 const areaCodeToGmCode = (x) => {
     return "GM" + x.toString().padStart(4, '0');
 };
+
+window.d3 = d3
 
 const movingAvg = (inputArr, maWin) => {
     const tempArr = Array(inputArr.length);
@@ -63,7 +66,7 @@ class App extends React.Component {
             "data/COVID-19_aantallen_gemeente_cumulatief_min.csv"
         ];
 
-        window.addEventListener('resize', _.throttle(this.resizeMap, 1500));
+        window.addEventListener('resize', _.throttle(this.resizeMap, 500));
 
         Promise.all(urls.map(url =>
             fetch(url)
@@ -146,74 +149,48 @@ class App extends React.Component {
                     .domain([0, medVal, maxVal])
                     .range(["white", "orange", "red"]);
 
-                svg.append("text")
-                    .text("")
-                    .attr("x", 10)
-                    .attr("y", 25);
+
+                console.log(`D3 scale linear ${colorScale(101)}`);
+
+                const legendSvgGroup = svg
+                    .append("g")
+                    .classed("legend-group", true);
 
 
-                const linearGradient = svg
-                    .append("linearGradient")
-                    .attr("id", "linear-gradient");
+                const [legendWidth, legendHeight] = [0.05 * window.innerWidth, 0.2 * window.innerHeight]
+                // Band scale for x-axis
+                const xScale = d3
+                    .scaleBand()
+                    .domain([0, 1])
+                    .range([0, legendWidth]);
 
-                linearGradient
-                    .selectAll("stop")
-                    .data([
-                        { offset: "0%", color: "white" },
-                        { offset: "50%", color: "orange" },
-                        { offset: "100%", color: "red" },
-                    ])
-                    .enter()
-                    .append("stop")
-                    .attr("offset", d => d.offset)
-                    .attr("stop-color", d => d.color);
+                // Linear scale for y-axis
+                const yScale = d3
+                    .scaleLinear()
+                    .domain([maxVal, 0])
+                    .range([0, legendHeight]);
 
-                // const legendsvg = svg
-                //     .append("g")
-                //     .attr("id", "legend-group")
-                //     .attr(
-                //         "transform",
-                //         "translate(10, 50)"
-                //     );
+                const expandedDomain = d3.range(0, maxVal+1, maxVal/legendHeight);
 
-                //Draw the Rectangle
-                // legendsvg
-                //     .append("rect")
-                //     .attr("class", "legendRect")
-                //     .attr("x", 0)
-                //     .attr("y", 10)
-                //     .attr("width", 150)
-                //     .attr("height", 10)
-                //     .style("fill", "url(#linear-gradient)")
-                //     .style("stroke", "black")
-                //     .style("stroke-width", 0.5)
-                //     ;
+                // Defining the legend bar
+                const svgBar = fc
+                    .autoBandwidth(fc.seriesSvgBar())
+                    .xScale(xScale)
+                    .yScale(yScale)
+                    .crossValue(0)
+                    .baseValue((_, i) => (i > 0 ? expandedDomain[i - 1] : 0))
+                    .mainValue(d => d)
+                    .decorate(selection => {
+                        selection.selectAll("path").style("fill", d => {
+                            console.log(`d = ${d}`);
+                            return colorScale(d)
+                        })
 
-                // legendsvg
-                //     .append("text")
-                //     .attr("class", "legendTitle")
-                //     .attr("x", 0)
-                //     .attr("y", 2)
-                //     .text(`Cases per ${PER_POPULATION / 1000}k people`);
+                    });
 
                 const legendScale = d3.scaleLinear()
                     .range([0, 75, 150])
                     .domain([0, medVal, maxVal]);
-
-                // x-axis
-                // legendsvg
-                //     .append("g")
-                //     .call(
-                //         d3
-                //             .axisBottom(legendScale)
-                //             .tickValues([0, medVal, maxVal])
-                //     )
-                //     .attr("class", "legendAxis")
-                //     .attr("id", "legendAxis")
-                //     .attr(
-                //         "transform",
-                //         "translate(0, 20)"
-                //     );
 
                 const toolDiv = d3.select("#chartArea")
                     .append("div")
@@ -244,10 +221,10 @@ class App extends React.Component {
                     .attr("d", d3.geoPath()
                         .projection(projection)
                     )
-                    .attr(
-                        "transform",
-                        `translate(${0.05 * window.innerWidth}, 0)`
-                    )
+                    // .attr(
+                    //     "transform",
+                    //     `translate(${0.05 * window.innerWidth}, 0)`
+                    // )
                     .attr("id", d => areaCodeToGmCode(d.properties.areaCode))
                     .on("mouseover", (e, d) => {
                         d3
