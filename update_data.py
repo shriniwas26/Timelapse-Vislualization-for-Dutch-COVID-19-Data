@@ -16,6 +16,7 @@ if __name__ == "__main__":
 
     print("Downloading file...")
     covid_data = pd.read_csv(DATA_URL, delimiter=";")
+    covid_data.sort_values(by=["Date_of_report", "Municipality_code"], inplace=True)
     covid_data.to_csv(
         output_filepath,
         index=False,
