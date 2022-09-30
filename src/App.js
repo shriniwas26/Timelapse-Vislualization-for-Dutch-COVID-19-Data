@@ -22,8 +22,6 @@ const areaCodeToGmCode = (x) => {
     return "GM" + x.toString().padStart(4, '0');
 };
 
-window.d3 = d3
-
 const movingAvg = (inputArr, maWin) => {
     const tempArr = Array(inputArr.length);
     for (let i = 0; i < inputArr.length; i++) {
@@ -44,7 +42,6 @@ class App extends React.Component {
 
     constructor(props) {
         super(props);
-        this.svgRef = React.createRef();
         this.state = {
             // Data
             populationData: null,
@@ -65,6 +62,7 @@ class App extends React.Component {
             "data/NL_Population_Latest.csv",
             "data/COVID-19_aantallen_gemeente_cumulatief_min.csv"
         ];
+        console.debug("componentDidMount() called");
 
         window.addEventListener('resize', _.throttle(this.resizeMap, 500));
 
@@ -138,7 +136,7 @@ class App extends React.Component {
 
                 const covidDataGroupedByDay = d3.group(populationAdjustedCovidData, x => x["Date_of_report"]);
 
-                const svg = d3.select(this.svgRef.current);
+                const svg = d3.select('#svg-nl-map');
                 svg.empty();
 
                 populationData.forEach(e => {
@@ -149,15 +147,12 @@ class App extends React.Component {
                     .domain([0, medVal, maxVal])
                     .range(["white", "orange", "red"]);
 
-
-                console.log(`D3 scale linear ${colorScale(101)}`);
-
                 const legendSvgGroup = svg
                     .append("g")
                     .classed("legend-group", true);
 
 
-                const [legendWidth, legendHeight] = [0.05 * window.innerWidth, 0.2 * window.innerHeight]
+                const [legendWidth, legendHeight] = [0.05 * window.innerWidth, 0.2 * window.innerHeight];
                 // Band scale for x-axis
                 const xScale = d3
                     .scaleBand()
@@ -170,7 +165,7 @@ class App extends React.Component {
                     .domain([maxVal, 0])
                     .range([0, legendHeight]);
 
-                const expandedDomain = d3.range(0, maxVal+1, maxVal/legendHeight);
+                const expandedDomain = d3.range(0, maxVal + 1, (maxVal / legendHeight) * 10);
 
                 // Defining the legend bar
                 const svgBar = fc
@@ -182,15 +177,15 @@ class App extends React.Component {
                     .mainValue(d => d)
                     .decorate(selection => {
                         selection.selectAll("path").style("fill", d => {
-                            console.log(`d = ${d}`);
-                            return colorScale(d)
-                        })
-
+                            return colorScale(d);
+                        });
                     });
 
-                const legendScale = d3.scaleLinear()
-                    .range([0, 75, 150])
-                    .domain([0, medVal, maxVal]);
+                const _legendBar = legendSvgGroup
+                    .append("g")
+                    .datum(expandedDomain)
+                    .call(svgBar);
+                console.debug(_legendBar)
 
                 const toolDiv = d3.select("#chartArea")
                     .append("div")
@@ -259,7 +254,7 @@ class App extends React.Component {
             });
 
 
-        const svg = d3.select(this.svgRef.current)
+        const svg = d3.select('#svg-nl-map')
             .attr("height", "60vh");
 
         svg
@@ -277,7 +272,7 @@ class App extends React.Component {
             .fitSize([window.innerWidth / 2, window.innerHeight / 2], this.state.nlGeoJson);
 
 
-        d3.select(this.svgRef.current)
+        d3.select('#svg-nl-map')
             .selectAll(".nl-map path")
             .join()
             .transition(ANIMATION_DELAY)
@@ -301,7 +296,7 @@ class App extends React.Component {
             dailyDict[e["Municipality_code"]] = e[DAILY_REPORTED_FIELD_MA];
         });
 
-        d3.select(this.svgRef.current)
+        d3.select('#svg-nl-map')
             .selectAll("#path-group path")
             .transition()
             .duration(ANIMATION_DELAY)
@@ -373,7 +368,7 @@ class App extends React.Component {
                         </div> :
                         <div style={{ "visibility": "hidden" }}></div>
                 }
-                <svg ref={this.svgRef} className="m-1 w-75 col-12">
+                <svg id='svg-nl-map' className="m-1 w-75 col-12">
                 </svg>
                 <br />
                 <div className='m-5 w-50 col-12 justify-content-center'>
