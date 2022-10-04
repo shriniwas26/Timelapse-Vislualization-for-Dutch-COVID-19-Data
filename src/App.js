@@ -18,10 +18,11 @@ const DAILY_REPORTED_FIELD = "Daily_" + REPORTED_FIELD;
 const DAILY_REPORTED_FIELD_MA = "Daily_" + REPORTED_FIELD + "_ma";
 const MOVING_AVG_WINDOW = 14;
 
-// window.d3 = d3;
-// window.moment = Moment;
-
-
+if (!process.env.NODE_ENV || process.env.NODE_ENV === 'development') {
+    // dev code
+    window.d3 = d3;
+    window.moment = Moment;
+}
 
 const areaCodeToGmCode = (x) => {
     return "GM" + x.toString().padStart(4, '0');
