@@ -6,9 +6,9 @@ import 'bootstrap/dist/css/bootstrap.css';
 import 'react-bootstrap-range-slider/dist/react-bootstrap-range-slider.css';
 // import * as bs from "bootstrap/dist/js/bootstrap.bundle";
 import { Spinner, Badge } from 'react-bootstrap';
-import RangeSlider from 'react-bootstrap-range-slider';
 import Moment from 'moment';
 import Button from 'react-bootstrap/Button';
+import Slider from '@mui/material/Slider';
 let _ = require('lodash');
 
 const ANIMATION_DELAY = 40;
@@ -19,6 +19,8 @@ const DAILY_REPORTED_FIELD_MA = "Daily_" + REPORTED_FIELD + "_ma";
 const MOVING_AVG_WINDOW = 14;
 
 window.d3 = d3;
+window.moment = Moment;
+
 
 
 const areaCodeToGmCode = (x) => {
@@ -50,14 +52,25 @@ class App extends React.Component {
             populationData: null,
             nlGeoJson: null,
             covidDataGroupedByDay: null,
+            sliderMarks: [],
 
             // Animation related state
-            selectedDayNr: 1,
-            numberOfDays: null,
+            selectedDayIdx: 0,
+            numberOfDays: 1,
             colorScale: null,
             isPlaying: false
         };
     }
+
+    idxToStringDate = (i) => {
+        if (this.state.covidDataGroupedByDay === null) {
+            return null;
+        }
+        else {
+            const s = this.state.covidDataGroupedByDay[i].date;
+            return s.format("DD MMM, YYYY");
+        }
+    };
 
     componentDidMount() {
         const urls = [
@@ -120,7 +133,7 @@ class App extends React.Component {
 
                 const populationAdjustedCovidData = covidDataDiffed.map(elem => {
                     const rowData = {};
-                    rowData["Date_of_report"] = Moment(elem["Date_of_report"]).format("YYYY, MMMM DD");
+                    rowData["Date_of_report"] = Moment(elem["Date_of_report"]).format("YYYY-MM-DD");
                     rowData["Municipality_code"] = elem["Municipality_code"];
                     rowData[DAILY_REPORTED_FIELD_MA] = Math.round(
                         elem[DAILY_REPORTED_FIELD_MA] /
@@ -134,7 +147,16 @@ class App extends React.Component {
                 const medVal = d3.mean(
                     populationAdjustedCovidData.map(e => e[DAILY_REPORTED_FIELD_MA]));
 
-                const covidDataGroupedByDay = d3.group(populationAdjustedCovidData, x => x["Date_of_report"]);
+                const covidDataGroupedByDay = Array.from(
+                    d3.group(populationAdjustedCovidData, x => x["Date_of_report"]),
+                    ([date, data]) => {
+                        return {
+                            date: Moment(date, "YYYY-MM-DD"),
+                            data: data
+                        };
+                    }
+                );
+                covidDataGroupedByDay.sort((x, y) => x.date > y.date ? 1 : -1);
 
                 populationData.forEach(e => {
                     populationData[e["Regions"]] = + e["PopulationOn1January_1"];
@@ -149,13 +171,40 @@ class App extends React.Component {
                 window.removeEventListener('resize', this.resizeMapThrottled);
                 window.addEventListener('resize', this.resizeMapThrottled);
 
+
+                const yearMarks = [];
+                covidDataGroupedByDay.forEach((element, idx) => {
+                    if (
+                        element.date.dayOfYear() === 1 ||
+                        element.date.dayOfYear() === 182
+                    ) {
+                        yearMarks.push({
+                            value: idx,
+                            label: element.date.format("MMM YYYY"),
+                        });
+                    }
+                });
+
+                const dateSliderMarks = [
+                    {
+                        value: 0,
+                        label: this.idxToStringDate(0),
+                    },
+                    ...yearMarks,
+                    {
+                        value: this.state.numberOfDays - 1,
+                        label: this.idxToStringDate(this.state.numberOfDays - 1),
+                    },
+                ];
+
                 this.setState({
                     nlGeoJson: nlGeoJson,
                     populationData: populationData,
                     covidData: covidData,
                     covidDataGroupedByDay: covidDataGroupedByDay,
-                    numberOfDays: covidDataGroupedByDay.size,
+                    numberOfDays: covidDataGroupedByDay.length,
                     colorScale: colorScale,
+                    sliderMarks: dateSliderMarks
                 });
             });
 
@@ -198,8 +247,6 @@ class App extends React.Component {
             ...d3.range(0, medVal, 2 * (medVal / legendHeight)),
             ...d3.range(medVal, maxVal + 1, 2 * (maxVal / legendHeight))
         ];
-
-        console.log(expandedDomain);
 
         // Defining the legend bar
         const svgBar = fc
@@ -289,16 +336,8 @@ class App extends React.Component {
 
     resizeMapThrottled = _.throttle(this.resizeMap, 1000, { leading: false, trailing: true });
 
-    redrawDay = (dayNumber) => {
-
-        const selectedDayIdx = Math.min(
-            Math.max(0, dayNumber),
-            this.state.numberOfDays - 1
-        );
-
-        const dayKey = [...this.state.covidDataGroupedByDay.keys()][selectedDayIdx];
-        const dailyData = this.state.covidDataGroupedByDay.get(dayKey);
-
+    redrawDay = (dayIdx) => {
+        const dailyData = this.state.covidDataGroupedByDay[dayIdx].data;
         const dailyDict = {};
         dailyData.forEach(e => {
             dailyDict[e["Municipality_code"]] = e[DAILY_REPORTED_FIELD_MA];
@@ -324,24 +363,23 @@ class App extends React.Component {
     }; // end redraw()
 
     componentDidUpdate() {
-        if (this.state.selectedDayNr >= this.state.numberOfDays) {
+        if (this.state.selectedDayIdx >= this.state.numberOfDays) {
             this.setState({
-                selectedDayNr: 0,
+                selectedDayIdx: 0,
                 isPlaying: false
             });
         }
 
         if (this.state.isPlaying) {
-            if (this.state.selectedDayNr < this.state.numberOfDays - 1) {
+            if (this.state.selectedDayIdx < this.state.numberOfDays - 1) {
                 setTimeout(() => {
                     this.setState({
-                        selectedDayNr: this.state.selectedDayNr + 1
+                        selectedDayIdx: this.state.selectedDayIdx + 1
                     });
                 }, 40);
             }
         }
     }
-
 
     render() {
         const isRenderable = (this.state.populationData !== null) &&
@@ -349,19 +387,20 @@ class App extends React.Component {
             (this.state.covidDataGroupedByDay !== null);
 
         if (isRenderable) {
-            this.redrawDay(this.state.selectedDayNr);
+            this.redrawDay(this.state.selectedDayIdx);
         }
+
+
 
         return (
             <div
                 id="chartArea"
                 className="m-5 w-75 col-12 justify-content-center"
             >
-                <p><Badge bg="primary">{
-                    this.state.covidDataGroupedByDay === null ? "" :
-                        [...this.state.covidDataGroupedByDay.keys()][this.state.selectedDayNr]
+                {/* <p><Badge bg="primary">{
+                    this.state.covidDataGroupedByDay === null ? "" : this.idxToStringDate(this.state.selectedDayIdx)
                 }
-                </Badge></p>
+                </Badge></p> */}
                 {
                     this.state.covidDataGroupedByDay === null ?
                         <div style={{ "height": "90%" }}>
@@ -380,27 +419,19 @@ class App extends React.Component {
                 </svg>
                 <br />
                 <div className='m-5 w-50 col-12 justify-content-center'>
-                    <RangeSlider
-                        style={{ align: "center" }}
+                    <Slider
                         min={0}
                         max={this.state.numberOfDays - 1}
                         step={1}
-                        value={this.state.selectedDayNr}
-                        tooltipPlacement={"top"}
-                        tooltip='auto'
-                        aria-label="Calendar day"
-                        tooltipLabel={i => {
-                            if (this.state.covidDataGroupedByDay === null) {
-                                return null;
-                            }
-                            else {
-                                return [...this.state.covidDataGroupedByDay.keys()][i];
-                            }
-                        }}
-                        size={'sm'}
-                        onChange={(changeEvent) => {
+                        defaultValue={0}
+                        marks={this.state.sliderMarks}
+                        aria-label="Always visible"
+                        value={this.state.selectedDayIdx}
+                        valueLabelDisplay="on"
+                        valueLabelFormat={this.idxToStringDate}
+                        onChangeCommitted={(_changeEvent, newValue) => {
                             this.setState({
-                                selectedDayNr: parseInt(changeEvent.target.value),
+                                selectedDayIdx: parseInt(newValue),
                                 isPlaying: false
                             });
                         }}
@@ -410,7 +441,7 @@ class App extends React.Component {
                         className='m-1'
                         onClick={() => {
                             this.setState({
-                                selectedDayNr: 0,
+                                selectedDayIdx: 0,
                                 isPlaying: false
                             });
                         }}
@@ -421,7 +452,7 @@ class App extends React.Component {
                         className='m-1'
                         onClick={() => {
                             this.setState({
-                                selectedDayNr: (this.state.selectedDayNr - 1) % this.state.numberOfDays,
+                                selectedDayIdx: (this.state.selectedDayIdx - 1) % this.state.numberOfDays,
                                 isPlaying: false
                             });
                         }}
@@ -442,7 +473,7 @@ class App extends React.Component {
                         className='m-1'
                         onClick={() => {
                             this.setState({
-                                selectedDayNr: this.state.selectedDayNr + 1,
+                                selectedDayIdx: this.state.selectedDayIdx + 1,
                                 isPlaying: false
                             });
                         }}
