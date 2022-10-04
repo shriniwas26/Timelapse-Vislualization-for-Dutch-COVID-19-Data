@@ -18,8 +18,8 @@ const DAILY_REPORTED_FIELD = "Daily_" + REPORTED_FIELD;
 const DAILY_REPORTED_FIELD_MA = "Daily_" + REPORTED_FIELD + "_ma";
 const MOVING_AVG_WINDOW = 14;
 
-window.d3 = d3;
-window.moment = Moment;
+// window.d3 = d3;
+// window.moment = Moment;
 
 
 
@@ -174,6 +174,7 @@ class App extends React.Component {
 
                 const yearMarks = [];
                 covidDataGroupedByDay.forEach((element, idx) => {
+
                     if (
                         element.date.dayOfYear() === 1 ||
                         element.date.dayOfYear() === 182
@@ -185,18 +186,6 @@ class App extends React.Component {
                     }
                 });
 
-                const dateSliderMarks = [
-                    {
-                        value: 0,
-                        label: this.idxToStringDate(0),
-                    },
-                    ...yearMarks,
-                    {
-                        value: this.state.numberOfDays - 1,
-                        label: this.idxToStringDate(this.state.numberOfDays - 1),
-                    },
-                ];
-
                 this.setState({
                     nlGeoJson: nlGeoJson,
                     populationData: populationData,
@@ -204,7 +193,7 @@ class App extends React.Component {
                     covidDataGroupedByDay: covidDataGroupedByDay,
                     numberOfDays: covidDataGroupedByDay.length,
                     colorScale: colorScale,
-                    sliderMarks: dateSliderMarks
+                    sliderMarks: yearMarks
                 });
             });
 
@@ -429,7 +418,7 @@ class App extends React.Component {
                         value={this.state.selectedDayIdx}
                         valueLabelDisplay="on"
                         valueLabelFormat={this.idxToStringDate}
-                        onChangeCommitted={(_changeEvent, newValue) => {
+                        onChange={(_changeEvent, newValue) => {
                             this.setState({
                                 selectedDayIdx: parseInt(newValue),
                                 isPlaying: false
