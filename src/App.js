@@ -4,7 +4,7 @@ import * as d3 from 'd3';
 import * as fc from 'd3fc';
 import 'bootstrap/dist/css/bootstrap.css';
 import 'react-bootstrap-range-slider/dist/react-bootstrap-range-slider.css';
-import "bootstrap/dist/js/bootstrap.bundle.min";
+// import * as bs from "bootstrap/dist/js/bootstrap.bundle";
 import { Spinner, Badge } from 'react-bootstrap';
 import RangeSlider from 'react-bootstrap-range-slider';
 import Moment from 'moment';
@@ -12,11 +12,14 @@ import Button from 'react-bootstrap/Button';
 let _ = require('lodash');
 
 const ANIMATION_DELAY = 40;
-const PER_POPULATION = 1E5;
+const PER_POPULATION = 100_000;
 const REPORTED_FIELD = "Total_reported";
 const DAILY_REPORTED_FIELD = "Daily_" + REPORTED_FIELD;
 const DAILY_REPORTED_FIELD_MA = "Daily_" + REPORTED_FIELD + "_ma";
 const MOVING_AVG_WINDOW = 14;
+
+window.d3 = d3;
+
 
 const areaCodeToGmCode = (x) => {
     return "GM" + x.toString().padStart(4, '0');
@@ -62,9 +65,6 @@ class App extends React.Component {
             "data/NL_Population_Latest.csv",
             "data/COVID-19_aantallen_gemeente_cumulatief_min.csv"
         ];
-        console.debug("componentDidMount() called");
-
-        window.addEventListener('resize', _.throttle(this.resizeMap, 500));
 
         Promise.all(urls.map(url =>
             fetch(url)
@@ -136,9 +136,6 @@ class App extends React.Component {
 
                 const covidDataGroupedByDay = d3.group(populationAdjustedCovidData, x => x["Date_of_report"]);
 
-                const svg = d3.select('#svg-nl-map');
-                svg.empty();
-
                 populationData.forEach(e => {
                     populationData[e["Regions"]] = + e["PopulationOn1January_1"];
                 });
@@ -147,100 +144,10 @@ class App extends React.Component {
                     .domain([0, medVal, maxVal])
                     .range(["white", "orange", "red"]);
 
-                const legendSvgGroup = svg
-                    .append("g")
-                    .classed("legend-group", true);
+                this.initialMapRender(nlGeoJson, medVal, maxVal, colorScale);
 
-
-                const [legendWidth, legendHeight] = [0.05 * window.innerWidth, 0.2 * window.innerHeight];
-                // Band scale for x-axis
-                const xScale = d3
-                    .scaleBand()
-                    .domain([0, 1])
-                    .range([0, legendWidth]);
-
-                // Linear scale for y-axis
-                const yScale = d3
-                    .scaleLinear()
-                    .domain([maxVal, 0])
-                    .range([0, legendHeight]);
-
-                const expandedDomain = d3.range(0, maxVal + 1, (maxVal / legendHeight) * 10);
-
-                // Defining the legend bar
-                const svgBar = fc
-                    .autoBandwidth(fc.seriesSvgBar())
-                    .xScale(xScale)
-                    .yScale(yScale)
-                    .crossValue(0)
-                    .baseValue((_, i) => (i > 0 ? expandedDomain[i - 1] : 0))
-                    .mainValue(d => d)
-                    .decorate(selection => {
-                        selection.selectAll("path").style("fill", d => {
-                            return colorScale(d);
-                        });
-                    });
-
-                const _legendBar = legendSvgGroup
-                    .append("g")
-                    .datum(expandedDomain)
-                    .call(svgBar);
-                console.debug(_legendBar)
-
-                const toolDiv = d3.select("#chartArea")
-                    .append("div")
-                    .style("visibility", "hidden")
-                    .style("position", "absolute")
-                    .style("background-color", "skyblue")
-                    .style("font", "14px times")
-                    .style("border-radius", "10px")
-                    .style("box-sizing", "border-box")
-                    .style("padding", "10px")
-                    ;
-
-                // Draw the map
-                const projection = d3.geoMercator()
-                    .fitSize([window.innerWidth / 2, window.innerHeight / 2], nlGeoJson);
-
-                svg.append("g")
-                    .attr("id", "path-group")
-                    .classed("nl-map", true)
-                    .selectAll("path")
-                    .join()
-                    .data(nlGeoJson.features)
-                    .enter()
-                    .append("path")
-                    .attr("stroke", "black")
-                    .attr("stroke-width", 1.0)
-                    // draw each Municiaplity
-                    .attr("d", d3.geoPath()
-                        .projection(projection)
-                    )
-                    // .attr(
-                    //     "transform",
-                    //     `translate(${0.05 * window.innerWidth}, 0)`
-                    // )
-                    .attr("id", d => areaCodeToGmCode(d.properties.areaCode))
-                    .on("mouseover", (e, d) => {
-                        d3
-                            .select(e.target)
-                            .attr("stroke-width", 4.0);
-
-                        toolDiv
-                            .style("visibility", "visible")
-                            .text(`Municipality: ${d.properties.areaName}`);
-                    })
-                    .on('mousemove', (e, d) => {
-                        toolDiv
-                            .style('top', (e.pageY - 50) + 'px')
-                            .style('left', (e.pageX - 50) + 'px');
-                    })
-                    .on('mouseout', (e) => {
-                        toolDiv.style('visibility', 'hidden');
-                        d3
-                            .select(e.target)
-                            .attr("stroke-width", 1.0);
-                    });
+                window.removeEventListener('resize', this.resizeMapThrottled);
+                window.addEventListener('resize', this.resizeMapThrottled);
 
                 this.setState({
                     nlGeoJson: nlGeoJson,
@@ -250,7 +157,6 @@ class App extends React.Component {
                     numberOfDays: covidDataGroupedByDay.size,
                     colorScale: colorScale,
                 });
-
             });
 
 
@@ -266,11 +172,112 @@ class App extends React.Component {
         // .style("border", "5px solid grey")
     }
 
+    initialMapRender = (nlGeoJson, medVal, maxVal, colorScale) => {
+        const svg = d3.select('#svg-nl-map');
+        svg.empty();
+
+        const legendSvgGroup = svg
+            .append("g")
+            .classed("legend-group", true);
+
+
+        const [legendWidth, legendHeight] = [0.05 * window.innerWidth, 0.2 * window.innerHeight];
+        // Band scale for x-axis
+        const xScale = d3
+            .scaleBand()
+            .domain([0, 1])
+            .range([0, legendWidth]);
+
+        // Linear scale for y-axis
+        const yScale = d3
+            .scaleLinear()
+            .domain([maxVal, 0])
+            .range([0, legendHeight]);
+
+        const expandedDomain = [
+            ...d3.range(0, medVal, 2 * (medVal / legendHeight)),
+            ...d3.range(medVal, maxVal + 1, 2 * (maxVal / legendHeight))
+        ];
+
+        console.log(expandedDomain);
+
+        // Defining the legend bar
+        const svgBar = fc
+            .autoBandwidth(fc.seriesSvgBar())
+            .xScale(xScale)
+            .yScale(yScale)
+            .crossValue(0)
+            .baseValue((_, i) => (i > 0 ? expandedDomain[i - 1] : 0))
+            .mainValue(d => d)
+            .decorate(selection => {
+                selection.selectAll("path").style("fill", d => {
+                    return colorScale(d);
+                });
+            });
+
+        // Add the legend bar
+        legendSvgGroup
+            .append("g")
+            .datum(expandedDomain)
+            .call(svgBar);
+
+        const toolDiv = d3.select("#chartArea")
+            .append("div")
+            .style("visibility", "hidden")
+            .style("position", "absolute")
+            .style("background-color", "skyblue")
+            .style("font", "14px times")
+            .style("border-radius", "10px")
+            .style("box-sizing", "border-box")
+            .style("padding", "10px")
+            ;
+
+        // Draw the map
+        const projection = d3.geoMercator()
+            .fitSize([window.innerWidth / 2, window.innerHeight / 2], nlGeoJson);
+
+        svg.append("g")
+            .attr("id", "path-group")
+            .classed("nl-map", true)
+            .selectAll("path")
+            .join()
+            .data(nlGeoJson.features)
+            .enter()
+            .append("path")
+            .attr("stroke", "black")
+            .attr("stroke-width", 1.0)
+            // draw each Municiaplity
+            .attr("d", d3.geoPath()
+                .projection(projection)
+            )
+            .attr("id", d => areaCodeToGmCode(d.properties.areaCode))
+            .on("mouseover", (e, d) => {
+                d3
+                    .select(e.target)
+                    .attr("stroke-width", 4.0);
+
+                toolDiv
+                    .style("visibility", "visible")
+                    .text(`Municipality: ${d.properties.areaName}`);
+            })
+            .on('mousemove', (e, _d) => {
+                toolDiv
+                    .style('top', (e.pageY - 50) + 'px')
+                    .style('left', (e.pageX - 50) + 'px');
+            })
+            .on('mouseout', (e) => {
+                toolDiv.style('visibility', 'hidden');
+                d3
+                    .select(e.target)
+                    .attr("stroke-width", 1.0);
+            })
+            ;
+    };
+
     resizeMap = () => {
         console.debug(`Resizing map to ${window.innerWidth} x ${window.innerHeight} screen-size`);
         const projection = d3.geoMercator()
             .fitSize([window.innerWidth / 2, window.innerHeight / 2], this.state.nlGeoJson);
-
 
         d3.select('#svg-nl-map')
             .selectAll(".nl-map path")
@@ -280,6 +287,7 @@ class App extends React.Component {
             .attr("d", d3.geoPath().projection(projection));
     };
 
+    resizeMapThrottled = _.throttle(this.resizeMap, 1000, { leading: false, trailing: true });
 
     redrawDay = (dayNumber) => {
 
@@ -336,11 +344,11 @@ class App extends React.Component {
 
 
     render() {
-        if (
-            (this.state.populationData !== null) &&
+        const isRenderable = (this.state.populationData !== null) &&
             (this.state.nlGeoJson !== null) &&
-            (this.state.covidDataGroupedByDay !== null)
-        ) {
+            (this.state.covidDataGroupedByDay !== null);
+
+        if (isRenderable) {
             this.redrawDay(this.state.selectedDayNr);
         }
 
