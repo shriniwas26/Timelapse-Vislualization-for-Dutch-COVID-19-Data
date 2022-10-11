@@ -213,7 +213,7 @@ class App extends React.Component {
 
                     if (
                         element.date.dayOfYear() === 1 ||
-                        element.date.dayOfYear() === 182
+                        element.date.dayOfYear() === 181
                     ) {
                         yearMarks.push({
                             value: idx,
