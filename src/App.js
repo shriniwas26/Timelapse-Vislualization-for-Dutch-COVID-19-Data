@@ -165,8 +165,8 @@ class App extends React.Component {
                         "date": 2020-10-23
                         "data": {
                             "GM0001": 7,
-                            "GM0001": 8,
-                            "GM0001": 11,
+                            "GM0002": 8,
+                            "GM0003": 11,
                             ...
                             ...
                             ...
