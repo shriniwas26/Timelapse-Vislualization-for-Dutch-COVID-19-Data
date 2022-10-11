@@ -3,15 +3,12 @@ import React, { } from 'react';
 import * as d3 from 'd3';
 import * as fc from 'd3fc';
 import 'bootstrap/dist/css/bootstrap.css';
-import 'react-bootstrap-range-slider/dist/react-bootstrap-range-slider.css';
-// import * as bs from "bootstrap/dist/js/bootstrap.bundle";
-import { Spinner, Badge } from 'react-bootstrap';
 import Moment from 'moment';
 import Button from 'react-bootstrap/Button';
-import Slider from '@mui/material/Slider';
+import { Slider, CircularProgress, Typography } from '@mui/material';
 let _ = require('lodash');
 
-const ANIMATION_DELAY = 40;
+const ANIMATION_DELAY = 50;
 const PER_POPULATION = 100_000;
 const REPORTED_FIELD = "Total_reported";
 const DAILY_REPORTED_FIELD = "Daily_" + REPORTED_FIELD;
@@ -111,7 +108,9 @@ class App extends React.Component {
                 );
 
                 covidDataGroupedByMunicipality.forEach(munData => {
-                    munData[0][DAILY_REPORTED_FIELD] = 0;
+                    munData.sort((a, b) => a["Date_of_report"] > b["Date_of_report"] ? 1 : -1);
+
+                    munData[0][DAILY_REPORTED_FIELD] = munData[0][REPORTED_FIELD];
                     for (let i = 1; i < munData.length; i++) {
                         munData[i][DAILY_REPORTED_FIELD] =
                             munData[i][REPORTED_FIELD] - munData[i - 1][REPORTED_FIELD];
@@ -148,12 +147,48 @@ class App extends React.Component {
                 const medVal = d3.mean(
                     populationAdjustedCovidData.map(e => e[DAILY_REPORTED_FIELD_MA]));
 
+                /*
+                covidDataGroupedByDay should finally look like this:
+                [
+                    {
+                        "date": 2020-10-22
+                        "data": {
+                            "GM0001": 12,
+                            "GM0002": 1,
+                            "GM0003": 3,
+                            ...
+                            ...
+                            ...
+                        }
+                    },
+                    {
+                        "date": 2020-10-23
+                        "data": {
+                            "GM0001": 7,
+                            "GM0001": 8,
+                            "GM0001": 11,
+                            ...
+                            ...
+                            ...
+                        }
+                    },
+                    ...
+                    ...
+                ]
+
+                */
+
+
                 const covidDataGroupedByDay = Array.from(
                     d3.group(populationAdjustedCovidData, x => x["Date_of_report"]),
                     ([date, data]) => {
                         return {
                             date: Moment(date, "YYYY-MM-DD"),
-                            data: data
+                            data: Object.fromEntries(
+                                data.map(
+                                    e => [e["Municipality_code"], e[DAILY_REPORTED_FIELD_MA]]
+                                )
+                            )
                         };
                     }
                 );
@@ -219,8 +254,7 @@ class App extends React.Component {
             .append("g")
             .classed("legend-group", true);
 
-
-        const [legendWidth, legendHeight] = [0.05 * window.innerWidth, 0.2 * window.innerHeight];
+        const [legendWidth, legendHeight] = [0.04 * window.innerWidth, 0.25 * window.innerHeight];
         // Band scale for x-axis
         const xScale = d3
             .scaleBand()
@@ -234,8 +268,8 @@ class App extends React.Component {
             .range([0, legendHeight]);
 
         const expandedDomain = [
-            ...d3.range(0, medVal, 2 * (medVal / legendHeight)),
-            ...d3.range(medVal, maxVal + 1, 2 * (maxVal / legendHeight))
+            ...d3.range(0, medVal, (medVal / legendHeight)),
+            ...d3.range(medVal, maxVal + (maxVal / legendHeight), (maxVal / legendHeight))
         ];
 
         // Defining the legend bar
@@ -253,10 +287,26 @@ class App extends React.Component {
             });
 
         // Add the legend bar
-        legendSvgGroup
+        const legendBar = legendSvgGroup
             .append("g")
             .datum(expandedDomain)
             .call(svgBar);
+
+        // Defining our label
+        const axisLabel = fc
+            .axisRight(yScale)
+            .tickValues([0, medVal, maxVal]);
+
+        // Drawing and translating the label
+        const barWidth = Math.abs(legendBar.node().getBoundingClientRect().width);
+        legendSvgGroup.append("g")
+            .attr("transform", `translate(${barWidth / 2},0)`)
+            .datum(expandedDomain)
+            .call(axisLabel)
+            .select(".domain");
+
+        legendSvgGroup
+            .attr("transform", `translate(${0.02 * window.innerWidth}, 20)`);
 
         const toolDiv = d3.select("#chartArea")
             .append("div")
@@ -319,7 +369,7 @@ class App extends React.Component {
         d3.select('#svg-nl-map')
             .selectAll(".nl-map path")
             .join()
-            .transition(ANIMATION_DELAY)
+            .transition(1)
             .duration(0)
             .attr("d", d3.geoPath().projection(projection));
     };
@@ -327,11 +377,7 @@ class App extends React.Component {
     resizeMapThrottled = _.throttle(this.resizeMap, 1000, { leading: false, trailing: true });
 
     redrawDay = (dayIdx) => {
-        const dailyData = this.state.covidDataGroupedByDay[dayIdx].data;
-        const dailyDict = {};
-        dailyData.forEach(e => {
-            dailyDict[e["Municipality_code"]] = e[DAILY_REPORTED_FIELD_MA];
-        });
+        const dailyDict = this.state.covidDataGroupedByDay[dayIdx].data;
 
         d3.select('#svg-nl-map')
             .selectAll("#path-group path")
@@ -361,13 +407,14 @@ class App extends React.Component {
         }
 
         if (this.state.isPlaying) {
-            if (this.state.selectedDayIdx < this.state.numberOfDays - 1) {
-                setTimeout(() => {
+            setTimeout(
+                () => {
                     this.setState({
-                        selectedDayIdx: this.state.selectedDayIdx + 1
+                        selectedDayIdx: (this.state.selectedDayIdx + 1) % this.state.numberOfDays
                     });
-                }, 40);
-            }
+                },
+                ANIMATION_DELAY
+            );
         }
     }
 
@@ -379,8 +426,6 @@ class App extends React.Component {
         if (isRenderable) {
             this.redrawDay(this.state.selectedDayIdx);
         }
-
-
 
         return (
             <div
@@ -394,21 +439,20 @@ class App extends React.Component {
                 {
                     this.state.covidDataGroupedByDay === null ?
                         <div style={{ "height": "90%" }}>
-                            <Spinner
-                                animation="border"
-                                role="status"
-                                size="lg"
-                                variant="primary"
-                            >
-                                <span className="visually-hidden">Loading...</span>
-                            </Spinner>
+                            <CircularProgress />
                         </div> :
                         <div style={{ "visibility": "hidden" }}></div>
                 }
+                <Typography variant="h4" component="h4">
+                    COVID-19 Data in the Netherlands.
+                </Typography>
+                <Typography variant="subtitle1" gutterBottom>
+                    Number of cases per {Intl.NumberFormat('en-US').format(PER_POPULATION)} people.
+                </Typography>
                 <svg id='svg-nl-map' className="m-1 w-75 col-12">
                 </svg>
                 <br />
-                <div className='m-5 w-50 col-12 justify-content-center'>
+                <div className='m-5 w-75 col-12 justify-content-center'>
                     <Slider
                         min={0}
                         max={this.state.numberOfDays - 1}
