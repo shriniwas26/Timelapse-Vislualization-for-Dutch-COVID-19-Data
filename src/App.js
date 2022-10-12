@@ -41,6 +41,21 @@ const movingAvg = (inputArr, maWin) => {
     return tempArr;
 };
 
+const getTickMarks = (covidDataGroupedByDay) => {
+    const tickMarks = [];
+    covidDataGroupedByDay.forEach((element, idx) => {
+        const isTick = (element.date.dayOfYear() === 1) ||
+            (window.innerWidth >= 550 && element.date.dayOfYear() === 181);
+        if (isTick) {
+            tickMarks.push({
+                value: idx,
+                label: element.date.format("MMM YYYY"),
+            });
+        }
+    });
+    return tickMarks;
+};
+
 class App extends React.Component {
 
     constructor(props) {
@@ -208,20 +223,6 @@ class App extends React.Component {
                 window.addEventListener('resize', this.resizeMapThrottled);
 
 
-                const yearMarks = [];
-                covidDataGroupedByDay.forEach((element, idx) => {
-
-                    if (
-                        element.date.dayOfYear() === 1 ||
-                        element.date.dayOfYear() === 181
-                    ) {
-                        yearMarks.push({
-                            value: idx,
-                            label: element.date.format("MMM YYYY"),
-                        });
-                    }
-                });
-
                 this.setState({
                     nlGeoJson: nlGeoJson,
                     populationData: populationData,
@@ -229,7 +230,7 @@ class App extends React.Component {
                     covidDataGroupedByDay: covidDataGroupedByDay,
                     numberOfDays: covidDataGroupedByDay.length,
                     colorScale: colorScale,
-                    sliderMarks: yearMarks
+                    sliderMarks: getTickMarks(covidDataGroupedByDay)
                 });
             });
 
@@ -372,6 +373,10 @@ class App extends React.Component {
             .transition(1)
             .duration(0)
             .attr("d", d3.geoPath().projection(projection));
+
+        this.setState({
+            sliderMarks: getTickMarks(this.state.covidDataGroupedByDay)
+        });
     };
 
     resizeMapThrottled = _.throttle(this.resizeMap, 1000, { leading: false, trailing: true });
