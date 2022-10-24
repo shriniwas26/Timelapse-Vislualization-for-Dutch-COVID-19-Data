@@ -268,9 +268,10 @@ class App extends React.Component {
             .domain([maxVal, 0])
             .range([0, legendHeight]);
 
+        const legendStep = 100 * medVal / legendHeight;
         const expandedDomain = [
-            ...d3.range(0, medVal, (medVal / legendHeight)),
-            ...d3.range(medVal, maxVal + (maxVal / legendHeight), (maxVal / legendHeight))
+            ...d3.range(0, medVal, legendStep),
+            ...d3.range(medVal, maxVal + legendStep, legendStep)
         ];
 
         // Defining the legend bar
@@ -404,19 +405,15 @@ class App extends React.Component {
     }; // end redraw()
 
     componentDidUpdate() {
-        if (this.state.selectedDayIdx >= this.state.numberOfDays) {
-            this.setState({
-                selectedDayIdx: 0,
-                isPlaying: false
-            });
-        }
-
         if (this.state.isPlaying) {
             setTimeout(
                 () => {
-                    this.setState({
-                        selectedDayIdx: (this.state.selectedDayIdx + 1) % this.state.numberOfDays
-                    });
+                    // this.setState({
+                    //     selectedDayIdx: (this.state.selectedDayIdx + 1) % this.state.numberOfDays
+                    // });
+                    this.setState(({ selectedDayIdx, numberOfDays }) => ({
+                        selectedDayIdx: (selectedDayIdx + 1) % numberOfDays
+                    }));
                 },
                 ANIMATION_DELAY
             );
@@ -437,10 +434,6 @@ class App extends React.Component {
                 id="chartArea"
                 className="m-5 w-75 col-12 justify-content-center"
             >
-                {/* <p><Badge bg="primary">{
-                    this.state.covidDataGroupedByDay === null ? "" : this.idxToStringDate(this.state.selectedDayIdx)
-                }
-                </Badge></p> */}
                 {
                     this.state.covidDataGroupedByDay === null ?
                         <div style={{ "height": "90%" }}>
