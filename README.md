@@ -21,8 +21,8 @@ I built this app as a fun exercise in teaching myself React.js and D3.js.
 
 ## Screenshots
 
-![alt text](public/Screenshot_1.png "Screenshot 1")
-![alt text](public/Screenshot_2.png "Screenshot 2")
+![alt text](/Screenshot_1.png "Screenshot 1")
+![alt text](/Screenshot_2.png "Screenshot 2")
 
 ## Setup
 
