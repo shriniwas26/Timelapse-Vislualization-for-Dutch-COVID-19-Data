@@ -24,7 +24,6 @@ export function MapRenderer({
   selectedDayIdx,
   isDataLoaded,
 }: MapRendererProps) {
-  console.log("MapRenderer received colorScale:", !!colorScale);
   const resizeMapThrottledRef = useRef<_.DebouncedFunc<() => void> | null>(
     null
   );
@@ -37,27 +36,18 @@ export function MapRenderer({
 
   // Update refs when props change
   useEffect(() => {
-    console.log(
-      "Updating colorScale ref:",
-      !!colorScale,
-      "from:",
-      !!colorScaleRef.current
-    );
     colorScaleRef.current = colorScale;
   }, [colorScale]);
 
   useEffect(() => {
-    console.log("Updating covidData ref:", !!covidDataGroupedByDay);
     covidDataRef.current = covidDataGroupedByDay;
   }, [covidDataGroupedByDay]);
 
   useEffect(() => {
-    console.log("Updating isDataLoaded ref:", isDataLoaded);
     isDataLoadedRef.current = isDataLoaded;
   }, [isDataLoaded]);
 
   useEffect(() => {
-    console.log("Updating nlGeoJson ref:", !!nlGeoJson);
     nlGeoJsonRef.current = nlGeoJson;
   }, [nlGeoJson]);
 
@@ -66,8 +56,11 @@ export function MapRenderer({
 
     const nlGeoJson = nlGeoJsonRef.current;
     const colorScale = colorScaleRef.current;
-    const medVal = 0; // We'll calculate this properly later
-    const maxVal = 0; // We'll calculate this properly later
+
+    // Get the actual domain values from the colorScale
+    const domain = colorScale.domain();
+    const medVal = domain[1] || 0;
+    const maxVal = domain[2] || 0;
     const svg = d3.select("#svg-nl-map");
     svg.empty();
 
@@ -192,37 +185,15 @@ export function MapRenderer({
 
   const redrawDay = useCallback(
     (dayIdx: number) => {
-      console.log("redrawDay function called with dayIdx:", dayIdx);
-      console.log(
-        "Current refs - colorScale:",
-        !!colorScaleRef.current,
-        "covidData:",
-        !!covidDataRef.current,
-        "isDataLoaded:",
-        isDataLoadedRef.current
-      );
       if (
         !isDataLoadedRef.current ||
         !colorScaleRef.current ||
         !covidDataRef.current
       ) {
-        console.log(
-          "redrawDay: missing dependencies - isDataLoaded:",
-          isDataLoadedRef.current,
-          "colorScale:",
-          !!colorScaleRef.current,
-          "covidDataGroupedByDay:",
-          !!covidDataRef.current
-        );
         return;
       }
 
       const dailyDict = covidDataRef.current[dayIdx].data;
-      console.log("Redrawing day:", dayIdx, "with data:", dailyDict);
-      console.log(
-        "Sample of daily data:",
-        Object.entries(dailyDict).slice(0, 5)
-      );
 
       d3.select("#svg-nl-map")
         .selectAll("#path-group path")
@@ -232,27 +203,16 @@ export function MapRenderer({
         .attr("fill", (e: any) => {
           const municipalityCode = areaCodeToGmCode(e.properties.areaCode);
           const currentReported = dailyDict[municipalityCode];
-          console.log(
-            "Municipality:",
-            e.properties.areaName,
-            "Code:",
-            municipalityCode,
-            "Value:",
-            currentReported
-          );
 
           if (currentReported === undefined) {
-            console.log("  -> No data, using gray");
             return "rgb(170, 170, 170)";
           }
 
           if (currentReported === null) {
-            console.log("  -> Null data, using white");
             return "rgb(255, 255, 255)";
           }
 
           const color = colorScaleRef.current(currentReported);
-          console.log("  -> Value:", currentReported, "Color:", color);
           return color;
         });
     },
@@ -270,7 +230,6 @@ export function MapRenderer({
   // Initial render effect - only runs once when data is loaded
   useEffect(() => {
     if (isDataLoaded && nlGeoJson && covidDataGroupedByDay && colorScale) {
-      console.log("Initial render with loaded data");
       // Initial map render
       initialMapRender();
 
@@ -282,13 +241,6 @@ export function MapRenderer({
 
       // Render first day
       redrawDay(0);
-    } else {
-      console.log("Initial render skipped - missing dependencies:", {
-        isDataLoaded,
-        hasNlGeoJson: !!nlGeoJson,
-        hasCovidData: !!covidDataGroupedByDay,
-        hasColorScale: !!colorScale,
-      });
     }
   }, [isDataLoaded, nlGeoJson, covidDataGroupedByDay, colorScale]);
 
@@ -300,15 +252,7 @@ export function MapRenderer({
       colorScaleRef.current &&
       covidDataRef.current
     ) {
-      console.log("Redraw effect triggered for day:", selectedDayIdx);
       redrawDay(selectedDayIdx);
-    } else {
-      console.log("Redraw effect skipped - missing dependencies:", {
-        isDataLoaded,
-        selectedDayIdx,
-        hasColorScale: !!colorScaleRef.current,
-        hasCovidData: !!covidDataRef.current,
-      });
     }
   }, [selectedDayIdx, isDataLoaded]);
 

@@ -27,7 +27,6 @@ function App(): JSX.Element {
   }, [isPlaying, selectedDayIdx, loadedData]);
 
   const handleDataLoaded = useCallback((data: LoadedData) => {
-    console.log("Data loaded, colorScale:", !!data.colorScale);
     setLoadedData(data);
     setIsDataLoaded(true);
   }, []);

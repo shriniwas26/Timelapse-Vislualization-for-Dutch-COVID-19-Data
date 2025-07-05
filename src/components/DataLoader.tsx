@@ -91,18 +91,7 @@ export function DataLoader({ onDataLoaded }: DataLoaderProps) {
           })
         );
 
-        console.log("Population data sample:", populationData.slice(0, 5));
-        console.log(
-          "Population data dict sample:",
-          Object.entries(populationDataDict).slice(0, 5)
-        );
-        console.log(
-          "COVID data municipality codes sample:",
-          [...new Set(covidData.map((d) => d["Municipality_code"]))].slice(
-            0,
-            10
-          )
-        );
+        // Data loaded successfully
 
         /** Calculate daily values */
         const covidDataGroupedByMunicipality = d3.group(
@@ -183,9 +172,7 @@ export function DataLoader({ onDataLoaded }: DataLoaderProps) {
           .domain([0, medVal || 0, maxVal || 0])
           .range(["white", "orange", "red"] as any);
 
-        console.log("Color scale created:", !!colorScale);
         console.log("Color scale domain:", [0, medVal, maxVal]);
-        console.log("Color scale range:", ["white", "orange", "red"]);
         console.log("Max value:", maxVal, "Med value:", medVal);
 
         const sliderMarks = getTickMarks(covidDataGroupedByDay);
