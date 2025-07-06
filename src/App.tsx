@@ -1,4 +1,4 @@
-import { Box, CircularProgress } from "@mui/material";
+import { Box, CircularProgress, Typography } from "@mui/material";
 import "bootstrap/dist/css/bootstrap.css";
 import { useCallback, useEffect, useState } from "react";
 import "./App.css";
@@ -71,11 +71,16 @@ function App(): JSX.Element {
               style={{
                 height: "90%",
                 display: "flex",
+                flexDirection: "column",
                 justifyContent: "center",
                 alignItems: "center",
+                gap: "16px",
               }}
             >
               <CircularProgress />
+              <Typography variant="body1" color="text.secondary">
+                Loading COVID-19 data...
+              </Typography>
             </div>
           ) : (
             <div style={{ visibility: "hidden" }}></div>
