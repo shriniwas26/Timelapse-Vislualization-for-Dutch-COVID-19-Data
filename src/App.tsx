@@ -1,4 +1,4 @@
-import { CircularProgress } from "@mui/material";
+import { Box, CircularProgress } from "@mui/material";
 import "bootstrap/dist/css/bootstrap.css";
 import { useCallback, useEffect, useState } from "react";
 import "./App.css";
@@ -67,7 +67,14 @@ function App(): JSX.Element {
       <div className="map-box">
         <div className="map-container">
           {!isDataLoaded ? (
-            <div style={{ height: "90%" }}>
+            <div
+              style={{
+                height: "90%",
+                display: "flex",
+                justifyContent: "center",
+                alignItems: "center",
+              }}
+            >
               <CircularProgress />
             </div>
           ) : (
@@ -77,24 +84,36 @@ function App(): JSX.Element {
           <DataLoader onDataLoaded={handleDataLoaded} />
 
           {loadedData && (
-            <MapRenderer
-              nlGeoJson={loadedData.nlGeoJson}
-              covidDataGroupedByDay={loadedData.covidDataGroupedByDay}
-              colorScale={loadedData.colorScale}
-              selectedDayIdx={selectedDayIdx}
-              isDataLoaded={isDataLoaded}
-            />
+            <Box sx={{ display: "flex", gap: 0, height: "100%" }}>
+              <Box sx={{ flex: 1 }}>
+                <MapRenderer
+                  nlGeoJson={loadedData.nlGeoJson}
+                  covidDataGroupedByDay={loadedData.covidDataGroupedByDay}
+                  colorScale={loadedData.colorScale}
+                  selectedDayIdx={selectedDayIdx}
+                  isDataLoaded={isDataLoaded}
+                />
+              </Box>
+              <Box
+                sx={{
+                  width: 250,
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "center",
+                  padding: 0,
+                }}
+              >
+                <LegendBox
+                  min={loadedData.colorScale.domain()[0]}
+                  mid={loadedData.colorScale.domain()[1]}
+                  max={loadedData.colorScale.domain()[2]}
+                  colorScale={loadedData.colorScale}
+                />
+              </Box>
+            </Box>
           )}
         </div>
       </div>
-      {loadedData && (
-        <LegendBox
-          min={loadedData.colorScale.domain()[0]}
-          mid={loadedData.colorScale.domain()[1]}
-          max={loadedData.colorScale.domain()[2]}
-          colorScale={loadedData.colorScale}
-        />
-      )}
       {loadedData && (
         <Controls
           selectedDayIdx={selectedDayIdx}

@@ -29,14 +29,13 @@ export const LegendBox: React.FC<LegendBoxProps> = ({
     <div
       style={{
         background: "#fff",
-        border: "2px solid red", // for debugging
         borderRadius: 8,
-        boxShadow: "0 2px 8px rgba(0,0,0,0.06)",
-        padding: 18,
+        boxShadow: "0 2px 8px rgba(0,0,0,0.1)",
+        padding: 16,
         display: "block",
-        margin: "24px auto",
-        maxWidth: 200,
         textAlign: "center",
+        width: "100%",
+        maxWidth: 200,
       }}
     >
       <div style={{ fontWeight: 600, marginBottom: 8, fontSize: 16 }}>
