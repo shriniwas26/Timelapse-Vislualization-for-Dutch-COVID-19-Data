@@ -69,7 +69,7 @@ function App(): JSX.Element {
           {!isDataLoaded ? (
             <div
               style={{
-                height: "90%",
+                height: "20%",
                 display: "flex",
                 flexDirection: "column",
                 justifyContent: "center",

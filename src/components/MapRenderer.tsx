@@ -55,9 +55,15 @@ export function MapRenderer({
   useEffect(() => {
     // Cleanup tooltip div on unmount or when data is not loaded
     return () => {
-      d3.select(".map-container").selectAll(".d3-tooltip").remove();
+      const svgNode = d3.select("#svg-nl-map").node() as HTMLElement;
+      const mapContainer = svgNode?.parentElement as HTMLElement;
+      if (mapContainer) {
+        d3.select(mapContainer).selectAll(".d3-tooltip").remove();
+      }
     };
   }, [isDataLoaded]);
+
+  const padding = 150; // px
 
   const initialMapRender = useCallback(() => {
     if (!nlGeoJsonRef.current || !colorScaleRef.current) return;
@@ -65,27 +71,29 @@ export function MapRenderer({
     const nlGeoJson = nlGeoJsonRef.current;
     const colorScale = colorScaleRef.current;
 
-    // Get the actual domain values from the colorScale
-    const domain = colorScale.domain();
-    const medVal = domain[1] || 0;
-    const maxVal = domain[2] || 0;
     const svg = d3.select("#svg-nl-map");
     svg.empty();
 
-    // Draw the map
-    const mapContainer = d3.select(".map-container").node() as HTMLElement;
+    // Use full container size and fitExtent for padding
+    const svgNode = d3.select("#svg-nl-map").node() as HTMLElement;
+    const mapContainer = svgNode?.parentElement?.parentElement as HTMLElement;
     const containerRect = mapContainer.getBoundingClientRect();
+    const mapWidth = containerRect.width - padding;
+    const mapHeight = containerRect.height - padding;
 
-    // Use container dimensions instead of window dimensions
-    const mapWidth = containerRect.width * 0.75;
-    const mapHeight = containerRect.height * 0.75;
+    const projection = d3.geoMercator().fitExtent(
+      [
+        [padding / 2, padding / 2],
+        [mapWidth - padding / 2, mapHeight - padding / 2],
+      ],
+      nlGeoJson
+    );
 
-    const projection = d3
-      .geoMercator()
-      .fitSize([mapWidth, mapHeight], nlGeoJson as any);
-
-    // Set SVG dimensions to match container
-    svg.attr("width", mapWidth).attr("height", mapHeight);
+    svg
+      .attr("width", mapWidth)
+      .attr("height", mapHeight)
+      .attr("viewBox", `0 0 ${mapWidth} ${mapHeight}`)
+      .attr("preserveAspectRatio", "xMidYMid meet");
 
     svg
       .append("g")
@@ -112,7 +120,8 @@ export function MapRenderer({
         }
       })
       .on("mousemove", (e, _d) => {
-        const mapContainer = d3.select(".map-container").node() as HTMLElement;
+        const svgNode = d3.select("#svg-nl-map").node() as HTMLElement;
+        const mapContainer = svgNode?.parentElement as HTMLElement;
         if (!mapContainer) {
           console.log("Map container not found");
           return;
@@ -165,23 +174,64 @@ export function MapRenderer({
   const resizeMap = useCallback(() => {
     if (!nlGeoJson) return;
 
-    const mapContainer = d3.select(".map-container").node() as HTMLElement;
-    if (!mapContainer) return;
-
+    // Use full container size and fitExtent for padding
+    const svgNode = d3.select("#svg-nl-map").node() as HTMLElement;
+    const mapContainer = svgNode?.parentElement?.parentElement as HTMLElement;
     const containerRect = mapContainer.getBoundingClientRect();
-    const mapWidth = containerRect.width;
-    const mapHeight = containerRect.height;
+    const mapWidth = containerRect.width - padding;
+    const mapHeight = containerRect.height - padding;
 
-    const projection = d3
-      .geoMercator()
-      .fitSize([mapWidth, mapHeight], nlGeoJson as any);
+    const projection = d3.geoMercator().fitExtent(
+      [
+        [padding / 2, padding / 2],
+        [mapWidth - padding / 2, mapHeight - padding / 2],
+      ],
+      nlGeoJson
+    );
+
+    const svg = d3.select("#svg-nl-map");
+    svg
+      .attr("width", mapWidth)
+      .attr("height", mapHeight)
+      .attr("viewBox", `0 0 ${mapWidth} ${mapHeight}`)
+      .attr("preserveAspectRatio", "xMidYMid meet");
 
     d3.select("#svg-nl-map")
-      .selectAll(".nl-map path")
+      .selectAll("#path-group path")
       .transition()
       .duration(0)
       .attr("d", d3.geoPath().projection(projection));
-  }, [nlGeoJson]);
+
+    // Re-render the current day data
+    if (
+      isDataLoadedRef.current &&
+      covidDataRef.current &&
+      colorScaleRef.current
+    ) {
+      const dailyDict = covidDataRef.current[selectedDayIdx].data;
+
+      d3.select("#svg-nl-map")
+        .selectAll("#path-group path")
+        .transition()
+        .duration(ANIMATION_DELAY)
+        .ease(d3.easePoly)
+        .attr("fill", (e: any) => {
+          const municipalityCode = areaCodeToGmCode(e.properties.areaCode);
+          const currentReported = dailyDict[municipalityCode];
+
+          if (currentReported === undefined) {
+            return "rgb(170, 170, 170)";
+          }
+
+          if (currentReported === null) {
+            return "rgb(255, 255, 255)";
+          }
+
+          const color = colorScaleRef.current(currentReported);
+          return color;
+        });
+    }
+  }, [nlGeoJson, selectedDayIdx]);
 
   const redrawDay = useCallback(
     (dayIdx: number) => {
@@ -221,7 +271,7 @@ export function MapRenderer({
 
   // Initialize throttled resize function
   useEffect(() => {
-    resizeMapThrottledRef.current = _.throttle(resizeMap, 1000, {
+    resizeMapThrottledRef.current = _.throttle(resizeMap, 250, {
       leading: false,
       trailing: true,
     });
@@ -261,16 +311,17 @@ export function MapRenderer({
     if (!isDataLoaded) return;
 
     // Remove any existing tooltip divs
-    d3.select(".map-container").selectAll(".d3-tooltip").remove();
-
-    const mapContainer = d3.select(".map-container");
-    if (mapContainer.empty()) {
+    const svgNode = d3.select("#svg-nl-map").node() as HTMLElement;
+    const mapContainer = svgNode?.parentElement as HTMLElement;
+    if (!mapContainer) {
       console.log("Map container not found during tooltip creation");
       return;
     }
 
+    d3.select(mapContainer).selectAll(".d3-tooltip").remove();
+
     const toolDiv = d3
-      .select(".map-container")
+      .select(mapContainer)
       .append("div")
       .attr("class", "d3-tooltip")
       .style("visibility", "hidden")
@@ -310,10 +361,24 @@ export function MapRenderer({
   }
 
   return (
-    <Box sx={{ width: "100%", height: "100%" }}>
-      <div className="map-container">
-        <svg id="svg-nl-map" />
-      </div>
+    <Box
+      sx={{
+        width: "100%",
+        height: "100%",
+        overflow: "hidden",
+        position: "relative",
+        display: "flex",
+        alignItems: "center",
+        justifyContent: "center",
+      }}
+    >
+      <svg
+        id="svg-nl-map"
+        style={{
+          maxWidth: "100%",
+          maxHeight: "100%",
+        }}
+      />
     </Box>
   );
 }

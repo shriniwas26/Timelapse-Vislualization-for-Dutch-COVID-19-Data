@@ -14,12 +14,6 @@ export const LegendBox: React.FC<LegendBoxProps> = ({
   max,
   colorScale,
 }) => {
-  console.log("%c[LegendBox]", "color: red; font-size: 16px;", {
-    min,
-    mid,
-    max,
-    colorScaleDomain: colorScale.domain(),
-  });
   const legendHeight = 180;
   const legendWidth = 28;
   const steps = 40;
@@ -55,7 +49,7 @@ export const LegendBox: React.FC<LegendBoxProps> = ({
         ))}
         {/* Axis labels */}
         <text x={legendWidth + 8} y={10} fontSize={12} fill="#444">
-          {max.toLocaleString()}
+          Max: {Math.round(max).toString()}
         </text>
         <text
           x={legendWidth + 8}
@@ -63,10 +57,10 @@ export const LegendBox: React.FC<LegendBoxProps> = ({
           fontSize={12}
           fill="#444"
         >
-          {mid.toLocaleString()}
+          Median: {Math.round(mid).toString()}
         </text>
         <text x={legendWidth + 8} y={legendHeight} fontSize={12} fill="#444">
-          {min.toLocaleString()}
+          Min: {Math.round(min).toString()}
         </text>
       </svg>
     </div>

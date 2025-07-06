@@ -35,8 +35,6 @@
 /* Map box styles */
 .map-box {
   width: 100%;
-  /* max-width: 900px; */
-  /* margin: 0 auto; */
   padding: 20px 0;
   background: #f8f9fa;
   border-radius: 8px;
@@ -51,6 +49,7 @@
   width: 100%;
   height: calc(100vh - var(--controls-height) - 40px);
   max-height: 70vh;
+  min-width: 300px;
   position: relative;
   background: #fff;
   border-radius: 8px;
@@ -63,6 +62,9 @@
   width: 100%;
   height: 100%;
   display: block;
+  overflow: hidden;
+  max-width: 100%;
+  max-height: 100%;
 }
 
 /* Responsive adjustments */
@@ -70,6 +72,17 @@
   .map-container {
     height: calc(100vh - 200px);
     max-height: 60vh;
+  }
+}
+
+@media (max-width: 480px) {
+  .map-box {
+    min-width: 300px;
+    padding: 10px 0;
+  }
+
+  .map-container {
+    min-width: 250px;
   }
 }
 
