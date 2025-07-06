@@ -24,3 +24,5 @@ yarn-error.log*
 
 # Ignore jupyter notebooks
 *.ipynb
+
+dist
