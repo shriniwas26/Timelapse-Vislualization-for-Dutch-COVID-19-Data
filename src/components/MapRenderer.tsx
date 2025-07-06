@@ -63,7 +63,7 @@ export function MapRenderer({
     };
   }, [isDataLoaded]);
 
-  const padding = 150; // px
+  const padding = 100; // px
 
   const initialMapRender = useCallback(() => {
     if (!nlGeoJsonRef.current || !colorScaleRef.current) return;
@@ -83,8 +83,8 @@ export function MapRenderer({
 
     const projection = d3.geoMercator().fitExtent(
       [
-        [padding / 2, padding / 2],
-        [mapWidth - padding / 2, mapHeight - padding / 2],
+        [0, 0],
+        [mapWidth - padding, mapHeight - padding],
       ],
       nlGeoJson
     );
@@ -183,8 +183,8 @@ export function MapRenderer({
 
     const projection = d3.geoMercator().fitExtent(
       [
-        [padding / 2, padding / 2],
-        [mapWidth - padding / 2, mapHeight - padding / 2],
+        [0, 0],
+        [mapWidth - padding, mapHeight - padding],
       ],
       nlGeoJson
     );

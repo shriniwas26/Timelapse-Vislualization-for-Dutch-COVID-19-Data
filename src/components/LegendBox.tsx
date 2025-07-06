@@ -17,7 +17,10 @@ export const LegendBox: React.FC<LegendBoxProps> = ({
   const legendHeight = 180;
   const legendWidth = 28;
   const steps = 40;
-  const values = d3.range(min, max, (max - min) / steps).concat([max]);
+  const values = d3
+    .range(min, max, (max - min) / steps)
+    .concat([max])
+    .reverse();
 
   return (
     <div
@@ -36,7 +39,7 @@ export const LegendBox: React.FC<LegendBoxProps> = ({
         Legend
       </div>
       <svg width={legendWidth + 40} height={legendHeight + 10}>
-        {/* Color bar */}
+        {/* Color bar (inverted) */}
         {values.map((v, i) => (
           <rect
             key={i}
@@ -47,7 +50,7 @@ export const LegendBox: React.FC<LegendBoxProps> = ({
             fill={colorScale(v)}
           />
         ))}
-        {/* Axis labels */}
+        {/* Axis labels (inverted) */}
         <text x={legendWidth + 8} y={10} fontSize={12} fill="#444">
           Max: {Math.round(max).toString()}
         </text>
