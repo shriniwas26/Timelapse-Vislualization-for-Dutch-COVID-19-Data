@@ -4,6 +4,7 @@ import { useCallback, useEffect, useState } from "react";
 import "./App.css";
 import { Controls } from "./components/Controls";
 import { DataLoader } from "./components/DataLoader";
+import { LegendBox } from "./components/LegendBox";
 import { MapRenderer } from "./components/MapRenderer";
 import { LoadedData } from "./types";
 
@@ -62,43 +63,54 @@ function App(): JSX.Element {
   }, [loadedData, selectedDayIdx]);
 
   return (
-    <div id="chartArea" className="m-5 w-75 col-12 justify-content-center">
-      {!isDataLoaded ? (
-        <div style={{ height: "90%" }}>
-          <CircularProgress />
+    <>
+      <div className="map-box">
+        <div className="map-container">
+          {!isDataLoaded ? (
+            <div style={{ height: "90%" }}>
+              <CircularProgress />
+            </div>
+          ) : (
+            <div style={{ visibility: "hidden" }}></div>
+          )}
+
+          <DataLoader onDataLoaded={handleDataLoaded} />
+
+          {loadedData && (
+            <MapRenderer
+              nlGeoJson={loadedData.nlGeoJson}
+              covidDataGroupedByDay={loadedData.covidDataGroupedByDay}
+              colorScale={loadedData.colorScale}
+              selectedDayIdx={selectedDayIdx}
+              isDataLoaded={isDataLoaded}
+            />
+          )}
         </div>
-      ) : (
-        <div style={{ visibility: "hidden" }}></div>
-      )}
-
-      <DataLoader onDataLoaded={handleDataLoaded} />
-
+      </div>
       {loadedData && (
-        <>
-          <MapRenderer
-            nlGeoJson={loadedData.nlGeoJson}
-            covidDataGroupedByDay={loadedData.covidDataGroupedByDay}
-            colorScale={loadedData.colorScale}
-            selectedDayIdx={selectedDayIdx}
-            isDataLoaded={isDataLoaded}
-          />
-
-          <Controls
-            selectedDayIdx={selectedDayIdx}
-            numberOfDays={loadedData.numberOfDays}
-            sliderMarks={loadedData.sliderMarks}
-            isPlaying={isPlaying}
-            isDataLoaded={isDataLoaded}
-            covidDataGroupedByDay={loadedData.covidDataGroupedByDay}
-            onDayChange={handleDayChange}
-            onPlayPause={handlePlayPause}
-            onReset={handleReset}
-            onPrevious={handlePrevious}
-            onNext={handleNext}
-          />
-        </>
+        <LegendBox
+          min={loadedData.colorScale.domain()[0]}
+          mid={loadedData.colorScale.domain()[1]}
+          max={loadedData.colorScale.domain()[2]}
+          colorScale={loadedData.colorScale}
+        />
       )}
-    </div>
+      {loadedData && (
+        <Controls
+          selectedDayIdx={selectedDayIdx}
+          numberOfDays={loadedData.numberOfDays}
+          sliderMarks={loadedData.sliderMarks}
+          isPlaying={isPlaying}
+          isDataLoaded={isDataLoaded}
+          covidDataGroupedByDay={loadedData.covidDataGroupedByDay}
+          onDayChange={handleDayChange}
+          onPlayPause={handlePlayPause}
+          onReset={handleReset}
+          onPrevious={handlePrevious}
+          onNext={handleNext}
+        />
+      )}
+    </>
   );
 }
 

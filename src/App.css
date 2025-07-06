@@ -1,3 +1,7 @@
+:root {
+  --controls-height: 160px;
+}
+
 .App {
   text-align: center;
 }
@@ -26,6 +30,47 @@
 
 .App-link {
   color: #61dafb;
+}
+
+/* Map box styles */
+.map-box {
+  width: 100%;
+  /* max-width: 900px; */
+  /* margin: 0 auto; */
+  padding: 20px 0;
+  background: #f8f9fa;
+  border-radius: 8px;
+  border: 2px solid #e9ecef;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+  margin-bottom: 120px; /* Add space for controls */
+  transition: margin-bottom 0.3s;
+}
+
+/* Map container styles */
+.map-container {
+  width: 100%;
+  height: calc(100vh - var(--controls-height) - 40px);
+  max-height: 70vh;
+  position: relative;
+  background: #fff;
+  border-radius: 8px;
+  overflow: hidden;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+  border: 1px solid #dee2e6;
+}
+
+.map-container svg {
+  width: 100%;
+  height: 100%;
+  display: block;
+}
+
+/* Responsive adjustments */
+@media (max-width: 768px) {
+  .map-container {
+    height: calc(100vh - 200px);
+    max-height: 60vh;
+  }
 }
 
 @keyframes App-logo-spin {
