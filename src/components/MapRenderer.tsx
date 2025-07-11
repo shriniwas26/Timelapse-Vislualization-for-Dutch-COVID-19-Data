@@ -55,6 +55,37 @@ export function MapRenderer({
     };
   }, []);
 
+  // Create tooltip once and reuse
+  useEffect(() => {
+    // Remove any existing tooltip
+    d3.selectAll(".covid-tooltip").remove();
+
+    // Create tooltip div
+    d3.select("body")
+      .append("div")
+      .attr("class", "covid-tooltip")
+      .style("position", "absolute")
+      .style("background", "rgba(0, 0, 0, 0.8)")
+      .style("color", "white")
+      .style("padding", "8px 12px")
+      .style("border-radius", "6px")
+      .style("font-size", "12px")
+      .style("font-family", "Arial, sans-serif")
+      .style("pointer-events", "none")
+      .style("z-index", "1000")
+      .style("opacity", "0")
+      .style("transition", "opacity 0.2s")
+      .style("white-space", "nowrap")
+      .style("box-shadow", "0 4px 8px rgba(0,0,0,0.3)");
+
+    console.log("Tooltip created");
+
+    // Cleanup function
+    return () => {
+      d3.selectAll(".covid-tooltip").remove();
+    };
+  }, []); // Only run once on mount
+
   // Force map re-render when data is loaded or dimensions change
   useEffect(() => {
     if (isDataLoaded || dimensions.width > 0) {
@@ -122,25 +153,6 @@ export function MapRenderer({
       g.attr("transform", `translate(${width * 0.05}, ${height * 0.05})`);
     }
 
-    // Create tooltip div
-    const tooltip = d3
-      .select("body")
-      .append("div")
-      .attr("class", "covid-tooltip")
-      .style("position", "absolute")
-      .style("background", "rgba(0, 0, 0, 0.8)")
-      .style("color", "white")
-      .style("padding", "8px 12px")
-      .style("border-radius", "6px")
-      .style("font-size", "12px")
-      .style("font-family", "Arial, sans-serif")
-      .style("pointer-events", "none")
-      .style("z-index", "1000")
-      .style("opacity", "0")
-      .style("transition", "opacity 0.2s")
-      .style("white-space", "nowrap")
-      .style("box-shadow", "0 4px 8px rgba(0,0,0,0.3)");
-
     // Render municipalities
     g.selectAll("path")
       .data(nlGeoJson.features)
@@ -166,6 +178,8 @@ export function MapRenderer({
         const covidValue = currentDayData.data[municipalityCode] || 0;
         const areaName = d.properties?.areaName || "Unknown";
 
+        console.log("Mouseover:", areaName, covidValue);
+
         // Highlight on hover
         d3.select(this)
           .attr("stroke-width", 3)
@@ -173,21 +187,29 @@ export function MapRenderer({
           .attr("opacity", 0.9);
 
         // Show tooltip
-        tooltip
-          .html(
-            `<strong>${areaName}</strong><br/>Cases per 100k: ${covidValue.toFixed(
-              1
-            )}`
-          )
-          .style("left", event.pageX + 10 + "px")
-          .style("top", event.pageY - 10 + "px")
-          .style("opacity", "1");
+        const tooltip = d3.select(".covid-tooltip");
+        if (!tooltip.empty()) {
+          tooltip
+            .html(
+              `<strong>${areaName}</strong><br/>Cases per 100k: ${covidValue.toFixed(
+                1
+              )}`
+            )
+            .style("left", event.pageX + 10 + "px")
+            .style("top", event.pageY - 10 + "px")
+            .style("opacity", "1");
+        } else {
+          console.log("Tooltip not found!");
+        }
       })
       .on("mousemove", function (event) {
         // Update tooltip position on mouse move
-        tooltip
-          .style("left", event.pageX + 10 + "px")
-          .style("top", event.pageY - 10 + "px");
+        const tooltip = d3.select(".covid-tooltip");
+        if (!tooltip.empty()) {
+          tooltip
+            .style("left", event.pageX + 10 + "px")
+            .style("top", event.pageY - 10 + "px");
+        }
       })
       .on("mouseout", function () {
         d3.select(this)
@@ -195,13 +217,11 @@ export function MapRenderer({
           .attr("stroke", "black")
           .attr("opacity", 0.7);
 
-        tooltip.style("opacity", "0");
+        const tooltip = d3.select(".covid-tooltip");
+        if (!tooltip.empty()) {
+          tooltip.style("opacity", "0");
+        }
       });
-
-    // Cleanup function
-    return () => {
-      d3.selectAll(".covid-tooltip").remove();
-    };
   }, [
     nlGeoJson,
     covidDataGroupedByDay,
@@ -221,7 +241,6 @@ export function MapRenderer({
           alignItems: "center",
           justifyContent: "center",
           backgroundColor: "#f5f5f5",
-          border: "2px solid green",
         }}
       >
         <div>Loading map...</div>
@@ -240,7 +259,6 @@ export function MapRenderer({
         width: "100%",
         height: "100%",
         position: "relative",
-        border: "2px solid red",
         backgroundColor: "#f8f9fa",
       }}
     >
@@ -250,7 +268,6 @@ export function MapRenderer({
         style={{
           width: "100%",
           height: "100%",
-          border: "2px solid blue",
         }}
       />
     </Box>
