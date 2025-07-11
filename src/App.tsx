@@ -1,10 +1,4 @@
-import {
-  Box,
-  CircularProgress,
-  Typography,
-  useMediaQuery,
-  useTheme,
-} from "@mui/material";
+import { Box, useMediaQuery, useTheme } from "@mui/material";
 import "bootstrap/dist/css/bootstrap.css";
 import { useCallback, useEffect, useRef, useState } from "react";
 import "./App.css";
@@ -92,26 +86,6 @@ function App(): JSX.Element {
     <>
       <div className="map-box">
         <div className="map-container">
-          {!isDataLoaded ? (
-            <div
-              style={{
-                height: "20%",
-                display: "flex",
-                flexDirection: "column",
-                justifyContent: "center",
-                alignItems: "center",
-                gap: "16px",
-              }}
-            >
-              <CircularProgress />
-              <Typography variant="body1" color="text.secondary">
-                Loading COVID-19 data...
-              </Typography>
-            </div>
-          ) : (
-            <div style={{ visibility: "hidden" }}></div>
-          )}
-
           <DataLoader onDataLoaded={handleDataLoaded} />
 
           {loadedData && (
