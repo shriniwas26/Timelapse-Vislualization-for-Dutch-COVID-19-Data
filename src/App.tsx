@@ -1,6 +1,6 @@
 import { Box, CircularProgress, Typography } from "@mui/material";
 import "bootstrap/dist/css/bootstrap.css";
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import "./App.css";
 import { Controls } from "./components/Controls";
 import { DataLoader } from "./components/DataLoader";
@@ -17,24 +17,39 @@ function App(): JSX.Element {
   const [isPlaying, setIsPlaying] = useState<boolean>(false);
   const [isDataLoaded, setIsDataLoaded] = useState<boolean>(false);
 
-  // Animation effect
+  // Ref to track current day for smooth animation
+  const currentDayRef = useRef<number>(0);
+
+  // Update ref when selectedDayIdx changes
+  useEffect(() => {
+    currentDayRef.current = selectedDayIdx;
+  }, [selectedDayIdx]);
+
+  const handleDayChange = useCallback(
+    (dayIdx: number, fromAnimation: boolean = false) => {
+      setSelectedDayIdx(dayIdx);
+      // Only stop playing if it's a manual change, not from animation
+      if (!fromAnimation) {
+        setIsPlaying(false);
+      }
+    },
+    []
+  );
+
+  // Animation effect - removed selectedDayIdx from dependencies
   useEffect(() => {
     if (isPlaying && loadedData) {
       const timer = setTimeout(() => {
-        setSelectedDayIdx((prev) => (prev + 1) % loadedData.numberOfDays);
+        const nextDay = (selectedDayIdx + 1) % loadedData.numberOfDays;
+        handleDayChange(nextDay, true); // Mark as animation change
       }, ANIMATION_DELAY);
       return () => clearTimeout(timer);
     }
-  }, [isPlaying, selectedDayIdx, loadedData]);
+  }, [isPlaying, loadedData, selectedDayIdx, handleDayChange]); // Added selectedDayIdx and handleDayChange back
 
   const handleDataLoaded = useCallback((data: LoadedData) => {
     setLoadedData(data);
     setIsDataLoaded(true);
-  }, []);
-
-  const handleDayChange = useCallback((dayIdx: number) => {
-    setSelectedDayIdx(dayIdx);
-    setIsPlaying(false);
   }, []);
 
   const handlePlayPause = useCallback(() => {

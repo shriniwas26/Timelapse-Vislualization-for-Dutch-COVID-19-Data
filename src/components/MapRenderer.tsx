@@ -1,10 +1,7 @@
 import { Box } from "@mui/material";
 import * as d3 from "d3";
-import _ from "lodash";
-import { useCallback, useEffect, useRef } from "react";
+import { useEffect, useRef, useState } from "react";
 import { DayData, GeoJson } from "../types";
-
-const ANIMATION_DELAY = 50;
 
 const areaCodeToGmCode = (x: number): string => {
   return "GM" + x.toString().padStart(4, "0");
@@ -25,358 +22,235 @@ export function MapRenderer({
   selectedDayIdx,
   isDataLoaded,
 }: MapRendererProps) {
-  const resizeMapThrottledRef = useRef<_.DebouncedFunc<() => void> | null>(
-    null
-  );
+  const svgRef = useRef<SVGSVGElement>(null);
+  const containerRef = useRef<HTMLDivElement>(null);
+  const [mapKey, setMapKey] = useState(0);
+  const [dimensions, setDimensions] = useState({ width: 0, height: 0 });
 
-  // Use refs to avoid dependency issues
-  const colorScaleRef = useRef<d3.ScaleLinear<number, string> | null>(null);
-  const covidDataRef = useRef<DayData[] | null>(null);
-  const isDataLoadedRef = useRef<boolean>(false);
-  const nlGeoJsonRef = useRef<GeoJson | null>(null);
+  // Preserve zoom/pan state across re-renders
+  const [currentTransform, setCurrentTransform] =
+    useState<d3.ZoomTransform | null>(null);
+  const isInitialRender = useRef(true);
 
-  // Update refs when props change
+  // Handle resize
   useEffect(() => {
-    colorScaleRef.current = colorScale;
-  }, [colorScale]);
+    if (!containerRef.current) return;
 
-  useEffect(() => {
-    covidDataRef.current = covidDataGroupedByDay;
-  }, [covidDataGroupedByDay]);
-
-  useEffect(() => {
-    isDataLoadedRef.current = isDataLoaded;
-  }, [isDataLoaded]);
-
-  useEffect(() => {
-    nlGeoJsonRef.current = nlGeoJson;
-  }, [nlGeoJson]);
-
-  useEffect(() => {
-    // Cleanup tooltip div on unmount or when data is not loaded
-    return () => {
-      const svgNode = d3.select("#svg-nl-map").node() as HTMLElement;
-      const mapContainer = svgNode?.parentElement as HTMLElement;
-      if (mapContainer) {
-        d3.select(mapContainer).selectAll(".d3-tooltip").remove();
+    const updateDimensions = () => {
+      if (containerRef.current) {
+        const rect = containerRef.current.getBoundingClientRect();
+        setDimensions({ width: rect.width, height: rect.height });
       }
     };
-  }, [isDataLoaded]);
 
-  const padding = 100; // px
+    // Initial dimensions
+    updateDimensions();
 
-  const initialMapRender = useCallback(() => {
-    if (!nlGeoJsonRef.current || !colorScaleRef.current) return;
+    // Set up resize observer
+    const resizeObserver = new ResizeObserver(updateDimensions);
+    resizeObserver.observe(containerRef.current);
 
-    const nlGeoJson = nlGeoJsonRef.current;
-    const colorScale = colorScaleRef.current;
-
-    const svg = d3.select("#svg-nl-map");
-    svg.empty();
-
-    // Use full container size and fitExtent for padding
-    const svgNode = d3.select("#svg-nl-map").node() as HTMLElement;
-    const mapContainer = svgNode?.parentElement?.parentElement as HTMLElement;
-    const containerRect = mapContainer.getBoundingClientRect();
-    const mapWidth = containerRect.width - padding;
-    const mapHeight = containerRect.height - padding;
-
-    const projection = d3.geoMercator().fitExtent(
-      [
-        [0, 0],
-        [mapWidth - padding, mapHeight - padding],
-      ],
-      nlGeoJson
-    );
-
-    svg
-      .attr("width", mapWidth)
-      .attr("height", mapHeight)
-      .attr("viewBox", `0 0 ${mapWidth} ${mapHeight}`)
-      .attr("preserveAspectRatio", "xMidYMid meet");
-
-    svg
-      .append("g")
-      .attr("id", "path-group")
-      .classed("nl-map", true)
-      .selectAll("path")
-      .data(nlGeoJson.features)
-      .enter()
-      .append("path")
-      .attr("stroke", "black")
-      .attr("stroke-width", 1.0)
-      .attr("fill", "white") // Set initial fill color
-      // draw each Municipality
-      .attr("d", (d: any) => d3.geoPath().projection(projection)(d as any))
-      .attr("id", (d) => areaCodeToGmCode(d.properties.areaCode))
-      .on("mouseover", (e, d) => {
-        d3.select(e.target as Element).attr("stroke-width", 4.0);
-
-        const tooltip = (window as any).mapTooltip;
-        if (tooltip) {
-          tooltip
-            .style("visibility", "visible")
-            .text(`Municipality: ${d.properties.areaName}`);
-        }
-      })
-      .on("mousemove", (e, _d) => {
-        const svgNode = d3.select("#svg-nl-map").node() as HTMLElement;
-        const mapContainer = svgNode?.parentElement as HTMLElement;
-        if (!mapContainer) {
-          console.log("Map container not found");
-          return;
-        }
-
-        const tooltip = (window as any).mapTooltip;
-        if (!tooltip) return;
-
-        const containerRect = mapContainer.getBoundingClientRect();
-        const mouseX = e.clientX - containerRect.left;
-        const mouseY = e.clientY - containerRect.top;
-
-        // Get actual tooltip dimensions
-        const tooltipNode = tooltip.node() as HTMLElement;
-        const tooltipRect = tooltipNode.getBoundingClientRect();
-        const tooltipWidth = tooltipRect.width;
-        const tooltipHeight = tooltipRect.height;
-
-        // Ensure tooltip stays within map bounds
-        const maxX = containerRect.width - tooltipWidth - 10;
-        const maxY = containerRect.height - tooltipHeight - 10;
-
-        // Position tooltip to the right and slightly below the mouse cursor
-        let left = mouseX + 10;
-        let top = mouseY + 10;
-
-        // Adjust if tooltip would go outside bounds
-        if (left + tooltipWidth > containerRect.width - 10) {
-          left = mouseX - tooltipWidth - 10;
-        }
-        if (top + tooltipHeight > containerRect.height - 10) {
-          top = mouseY - tooltipHeight - 10;
-        }
-
-        // Ensure minimum position
-        left = Math.max(10, Math.min(left, maxX));
-        top = Math.max(10, Math.min(top, maxY));
-
-        tooltip.style("top", top + "px").style("left", left + "px");
-      })
-      .on("mouseout", (e) => {
-        const tooltip = (window as any).mapTooltip;
-        if (tooltip) {
-          tooltip.style("visibility", "hidden");
-        }
-        d3.select(e.target as Element).attr("stroke-width", 1.0);
-      });
+    return () => {
+      resizeObserver.disconnect();
+    };
   }, []);
 
-  const resizeMap = useCallback(() => {
-    if (!nlGeoJson) return;
-
-    // Use full container size and fitExtent for padding
-    const svgNode = d3.select("#svg-nl-map").node() as HTMLElement;
-    const mapContainer = svgNode?.parentElement?.parentElement as HTMLElement;
-    const containerRect = mapContainer.getBoundingClientRect();
-    const mapWidth = containerRect.width - padding;
-    const mapHeight = containerRect.height - padding;
-
-    const projection = d3.geoMercator().fitExtent(
-      [
-        [0, 0],
-        [mapWidth - padding, mapHeight - padding],
-      ],
-      nlGeoJson
-    );
-
-    const svg = d3.select("#svg-nl-map");
-    svg
-      .attr("width", mapWidth)
-      .attr("height", mapHeight)
-      .attr("viewBox", `0 0 ${mapWidth} ${mapHeight}`)
-      .attr("preserveAspectRatio", "xMidYMid meet");
-
-    d3.select("#svg-nl-map")
-      .selectAll("#path-group path")
-      .transition()
-      .duration(0)
-      .attr("d", d3.geoPath().projection(projection));
-
-    // Re-render the current day data
-    if (
-      isDataLoadedRef.current &&
-      covidDataRef.current &&
-      colorScaleRef.current
-    ) {
-      const dailyDict = covidDataRef.current[selectedDayIdx].data;
-
-      d3.select("#svg-nl-map")
-        .selectAll("#path-group path")
-        .transition()
-        .duration(ANIMATION_DELAY)
-        .ease(d3.easePoly)
-        .attr("fill", (e: any) => {
-          const municipalityCode = areaCodeToGmCode(e.properties.areaCode);
-          const currentReported = dailyDict[municipalityCode];
-
-          if (currentReported === undefined) {
-            return "rgb(170, 170, 170)";
-          }
-
-          if (currentReported === null) {
-            return "rgb(255, 255, 255)";
-          }
-
-          const color = colorScaleRef.current(currentReported);
-          return color;
-        });
-    }
-  }, [nlGeoJson, selectedDayIdx]);
-
-  const redrawDay = useCallback(
-    (dayIdx: number) => {
-      if (
-        !isDataLoadedRef.current ||
-        !colorScaleRef.current ||
-        !covidDataRef.current
-      ) {
-        return;
-      }
-
-      const dailyDict = covidDataRef.current[dayIdx].data;
-
-      d3.select("#svg-nl-map")
-        .selectAll("#path-group path")
-        .transition()
-        .duration(ANIMATION_DELAY)
-        .ease(d3.easePoly)
-        .attr("fill", (e: any) => {
-          const municipalityCode = areaCodeToGmCode(e.properties.areaCode);
-          const currentReported = dailyDict[municipalityCode];
-
-          if (currentReported === undefined) {
-            return "rgb(170, 170, 170)";
-          }
-
-          if (currentReported === null) {
-            return "rgb(255, 255, 255)";
-          }
-
-          const color = colorScaleRef.current(currentReported);
-          return color;
-        });
-    },
-    [] // No dependencies since we use refs
-  );
-
-  // Initialize throttled resize function
+  // Force map re-render when data is loaded or dimensions change
   useEffect(() => {
-    resizeMapThrottledRef.current = _.throttle(resizeMap, 250, {
-      leading: false,
-      trailing: true,
-    });
-  }, [resizeMap]);
-
-  // Initial render effect - only runs once when data is loaded
-  useEffect(() => {
-    if (isDataLoaded && nlGeoJson && covidDataGroupedByDay && colorScale) {
-      // Initial map render
-      initialMapRender();
-
-      // Set up resize listener
-      if (resizeMapThrottledRef.current) {
-        window.removeEventListener("resize", resizeMapThrottledRef.current);
-        window.addEventListener("resize", resizeMapThrottledRef.current);
-      }
-
-      // Render first day
-      redrawDay(0);
+    if (isDataLoaded || dimensions.width > 0) {
+      setMapKey((prev) => prev + 1);
     }
-  }, [isDataLoaded, nlGeoJson, covidDataGroupedByDay, colorScale]);
+  }, [isDataLoaded, dimensions]);
 
-  // Redraw effect - runs when selectedDayIdx changes
+  // D3 map rendering
   useEffect(() => {
     if (
-      isDataLoaded &&
-      selectedDayIdx >= 0 &&
-      colorScaleRef.current &&
-      covidDataRef.current
+      !svgRef.current ||
+      !nlGeoJson ||
+      !covidDataGroupedByDay ||
+      selectedDayIdx >= covidDataGroupedByDay.length ||
+      dimensions.width === 0
     ) {
-      redrawDay(selectedDayIdx);
-    }
-  }, [selectedDayIdx, isDataLoaded]);
-
-  // Create tooltip when component mounts
-  useEffect(() => {
-    if (!isDataLoaded) return;
-
-    // Remove any existing tooltip divs
-    const svgNode = d3.select("#svg-nl-map").node() as HTMLElement;
-    const mapContainer = svgNode?.parentElement as HTMLElement;
-    if (!mapContainer) {
-      console.log("Map container not found during tooltip creation");
       return;
     }
 
-    d3.select(mapContainer).selectAll(".d3-tooltip").remove();
+    const currentDayData = covidDataGroupedByDay[selectedDayIdx];
+    console.log("D3: Rendering map for day", selectedDayIdx);
 
-    const toolDiv = d3
-      .select(mapContainer)
+    // Clear previous content
+    d3.select(svgRef.current).selectAll("*").remove();
+
+    // Set up dimensions
+    const width = dimensions.width;
+    const height = dimensions.height;
+
+    // Create projection for Netherlands with padding
+    const projection = d3
+      .geoMercator()
+      .fitSize([width * 0.9, height * 0.9], nlGeoJson as any) // Add 10% padding
+      .precision(100);
+
+    // Create path generator
+    const path = d3.geoPath().projection(projection);
+
+    // Create SVG container
+    const svg = d3.select(svgRef.current);
+
+    // Add zoom behavior with better bounds
+    const zoom = d3
+      .zoom()
+      .scaleExtent([0.5, 8]) // Allow zooming out more
+      .on("zoom", (event) => {
+        g.attr("transform", event.transform);
+        setCurrentTransform(event.transform);
+      });
+
+    svg.call(zoom as any);
+
+    // Center the map initially or apply preserved transform
+    const g = svg.append("g");
+
+    if (isInitialRender.current) {
+      // First render - center with padding
+      g.attr("transform", `translate(${width * 0.05}, ${height * 0.05})`);
+      isInitialRender.current = false;
+    } else if (currentTransform) {
+      // Subsequent renders - apply preserved transform
+      g.attr("transform", currentTransform.toString());
+    } else {
+      // Fallback - center with padding
+      g.attr("transform", `translate(${width * 0.05}, ${height * 0.05})`);
+    }
+
+    // Create tooltip div
+    const tooltip = d3
+      .select("body")
       .append("div")
-      .attr("class", "d3-tooltip")
-      .style("visibility", "hidden")
+      .attr("class", "covid-tooltip")
       .style("position", "absolute")
-      .style("background-color", "rgba(0, 0, 0, 0.8)")
+      .style("background", "rgba(0, 0, 0, 0.8)")
       .style("color", "white")
-      .style("font", "11px Arial, sans-serif")
-      .style("border-radius", "4px")
-      .style("box-sizing", "border-box")
-      .style("padding", "6px 8px")
-      .style("z-index", "1000")
+      .style("padding", "8px 12px")
+      .style("border-radius", "6px")
+      .style("font-size", "12px")
+      .style("font-family", "Arial, sans-serif")
       .style("pointer-events", "none")
-      .style("border", "none")
-      .style("box-shadow", "0 2px 4px rgba(0,0,0,0.3)")
+      .style("z-index", "1000")
+      .style("opacity", "0")
+      .style("transition", "opacity 0.2s")
       .style("white-space", "nowrap")
-      .style("max-width", "200px");
+      .style("box-shadow", "0 4px 8px rgba(0,0,0,0.3)");
 
-    // Store tooltip reference for use in event handlers
-    (window as any).mapTooltip = toolDiv;
+    // Render municipalities
+    g.selectAll("path")
+      .data(nlGeoJson.features)
+      .enter()
+      .append("path")
+      .attr("d", path as any)
+      .attr("fill", (d: any) => {
+        const areaCode = d.properties?.areaCode;
+        if (!areaCode) return "#ffffff";
 
+        const municipalityCode = areaCodeToGmCode(areaCode);
+        const covidValue = currentDayData.data[municipalityCode] || 0;
+        return colorScale(covidValue);
+      })
+      .attr("stroke", "black")
+      .attr("stroke-width", 1)
+      .attr("opacity", 0.7)
+      .on("mouseover", function (event, d: any) {
+        const areaCode = d.properties?.areaCode;
+        if (!areaCode) return;
+
+        const municipalityCode = areaCodeToGmCode(areaCode);
+        const covidValue = currentDayData.data[municipalityCode] || 0;
+        const areaName = d.properties?.areaName || "Unknown";
+
+        // Highlight on hover
+        d3.select(this)
+          .attr("stroke-width", 3)
+          .attr("stroke", "#333")
+          .attr("opacity", 0.9);
+
+        // Show tooltip
+        tooltip
+          .html(
+            `<strong>${areaName}</strong><br/>Cases per 100k: ${covidValue.toFixed(
+              1
+            )}`
+          )
+          .style("left", event.pageX + 10 + "px")
+          .style("top", event.pageY - 10 + "px")
+          .style("opacity", "1");
+      })
+      .on("mousemove", function (event) {
+        // Update tooltip position on mouse move
+        tooltip
+          .style("left", event.pageX + 10 + "px")
+          .style("top", event.pageY - 10 + "px");
+      })
+      .on("mouseout", function () {
+        d3.select(this)
+          .attr("stroke-width", 1)
+          .attr("stroke", "black")
+          .attr("opacity", 0.7);
+
+        tooltip.style("opacity", "0");
+      });
+
+    // Cleanup function
     return () => {
-      d3.select(".map-container").selectAll(".d3-tooltip").remove();
+      d3.selectAll(".covid-tooltip").remove();
     };
-  }, [isDataLoaded]);
+  }, [
+    nlGeoJson,
+    covidDataGroupedByDay,
+    colorScale,
+    selectedDayIdx,
+    mapKey,
+    dimensions,
+  ]);
 
-  // Cleanup resize listener
-  useEffect(() => {
-    return () => {
-      if (resizeMapThrottledRef.current) {
-        window.removeEventListener("resize", resizeMapThrottledRef.current);
-      }
-    };
-  }, []);
-
-  if (!isDataLoaded) {
-    return null;
+  if (!isDataLoaded || !nlGeoJson) {
+    return (
+      <Box
+        sx={{
+          width: "100%",
+          height: "100%",
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "center",
+          backgroundColor: "#f5f5f5",
+          border: "2px solid green",
+        }}
+      >
+        <div>Loading map...</div>
+      </Box>
+    );
   }
+
+  console.log("MapRenderer: Rendering D3 map");
+  console.log("MapRenderer: isDataLoaded:", isDataLoaded);
+  console.log("MapRenderer: nlGeoJson:", !!nlGeoJson);
 
   return (
     <Box
+      ref={containerRef}
       sx={{
         width: "100%",
         height: "100%",
-        overflow: "hidden",
         position: "relative",
-        display: "flex",
-        alignItems: "center",
-        justifyContent: "center",
+        border: "2px solid red",
+        backgroundColor: "#f8f9fa",
       }}
     >
       <svg
-        id="svg-nl-map"
+        key={mapKey}
+        ref={svgRef}
         style={{
-          maxWidth: "100%",
-          maxHeight: "100%",
+          width: "100%",
+          height: "100%",
+          border: "2px solid blue",
         }}
       />
     </Box>
