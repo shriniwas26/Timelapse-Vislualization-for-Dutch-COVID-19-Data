@@ -6,6 +6,7 @@ interface LegendBoxProps {
   mid: number;
   max: number;
   colorScale: d3.ScaleLinear<number, string>;
+  isMobile?: boolean;
 }
 
 export const LegendBox: React.FC<LegendBoxProps> = ({
@@ -13,10 +14,11 @@ export const LegendBox: React.FC<LegendBoxProps> = ({
   mid,
   max,
   colorScale,
+  isMobile = false,
 }) => {
-  const legendHeight = 180;
-  const legendWidth = 28;
-  const steps = 40;
+  const legendHeight = isMobile ? 120 : 180;
+  const legendWidth = isMobile ? 20 : 28;
+  const steps = isMobile ? 30 : 40;
   const values = d3
     .range(min, max, (max - min) / steps)
     .concat([max])
@@ -28,17 +30,26 @@ export const LegendBox: React.FC<LegendBoxProps> = ({
         background: "#fff",
         borderRadius: 8,
         boxShadow: "0 2px 8px rgba(0,0,0,0.1)",
-        padding: 16,
+        padding: isMobile ? 8 : 16,
         display: "block",
         textAlign: "center",
         width: "100%",
-        maxWidth: 200,
+        maxWidth: isMobile ? 120 : 200,
       }}
     >
-      <div style={{ fontWeight: 600, marginBottom: 8, fontSize: 16 }}>
+      <div
+        style={{
+          fontWeight: 600,
+          marginBottom: isMobile ? 4 : 8,
+          fontSize: isMobile ? 12 : 16,
+        }}
+      >
         Legend
       </div>
-      <svg width={legendWidth + 40} height={legendHeight + 10}>
+      <svg
+        width={legendWidth + (isMobile ? 30 : 40)}
+        height={legendHeight + 10}
+      >
         {/* Color bar (inverted) */}
         {values.map((v, i) => (
           <rect
@@ -51,18 +62,28 @@ export const LegendBox: React.FC<LegendBoxProps> = ({
           />
         ))}
         {/* Axis labels (inverted) */}
-        <text x={legendWidth + 8} y={10} fontSize={12} fill="#444">
+        <text
+          x={legendWidth + 8}
+          y={10}
+          fontSize={isMobile ? 8 : 12}
+          fill="#444"
+        >
           Max: {Math.round(max).toString()}
         </text>
         <text
           x={legendWidth + 8}
           y={legendHeight / 2 + 5}
-          fontSize={12}
+          fontSize={isMobile ? 8 : 12}
           fill="#444"
         >
-          Median: {Math.round(mid).toString()}
+          {isMobile ? "Mid:" : "Median:"} {Math.round(mid).toString()}
         </text>
-        <text x={legendWidth + 8} y={legendHeight} fontSize={12} fill="#444">
+        <text
+          x={legendWidth + 8}
+          y={legendHeight}
+          fontSize={isMobile ? 8 : 12}
+          fill="#444"
+        >
           Min: {Math.round(min).toString()}
         </text>
       </svg>

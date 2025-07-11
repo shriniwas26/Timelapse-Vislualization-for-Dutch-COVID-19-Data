@@ -1,5 +1,7 @@
 :root {
   --controls-height: 160px;
+  --controls-height-mobile: 200px;
+  --controls-height-small-mobile: 220px;
 }
 
 .App {
@@ -68,21 +70,77 @@
 }
 
 /* Responsive adjustments */
+@media (max-width: 1024px) {
+  .map-container {
+    height: calc(100vh - var(--controls-height-mobile) - 40px);
+    max-height: 65vh;
+  }
+
+  .map-box {
+    margin-bottom: var(--controls-height-mobile);
+  }
+}
+
 @media (max-width: 768px) {
   .map-container {
-    height: calc(100vh - 200px);
+    height: calc(100vh - var(--controls-height-mobile) - 20px);
     max-height: 60vh;
+    min-width: 280px;
+  }
+
+  .map-box {
+    padding: 15px 0;
+    margin-bottom: var(--controls-height-mobile);
   }
 }
 
 @media (max-width: 480px) {
   .map-box {
-    min-width: 300px;
+    min-width: 280px;
     padding: 10px 0;
+    margin-bottom: var(--controls-height-small-mobile);
   }
 
   .map-container {
     min-width: 250px;
+    height: calc(100vh - var(--controls-height-small-mobile) - 20px);
+    max-height: 55vh;
+  }
+}
+
+@media (max-width: 360px) {
+  .map-container {
+    min-width: 220px;
+    max-height: 50vh;
+  }
+
+  .map-box {
+    min-width: 220px;
+  }
+}
+
+/* Touch-friendly improvements */
+@media (hover: none) and (pointer: coarse) {
+  /* Mobile touch devices */
+  .map-container {
+    touch-action: manipulation;
+  }
+
+  /* Ensure minimum touch target size */
+  button, [role="button"] {
+    min-height: 44px;
+    min-width: 44px;
+  }
+}
+
+/* Landscape orientation adjustments */
+@media (max-height: 500px) and (orientation: landscape) {
+  .map-container {
+    max-height: 45vh;
+  }
+
+  .map-box {
+    margin-bottom: 180px;
   }
 }
 

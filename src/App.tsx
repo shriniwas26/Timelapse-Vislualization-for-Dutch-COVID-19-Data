@@ -1,4 +1,10 @@
-import { Box, CircularProgress, Typography } from "@mui/material";
+import {
+  Box,
+  CircularProgress,
+  Typography,
+  useMediaQuery,
+  useTheme,
+} from "@mui/material";
 import "bootstrap/dist/css/bootstrap.css";
 import { useCallback, useEffect, useRef, useState } from "react";
 import "./App.css";
@@ -16,6 +22,11 @@ function App(): JSX.Element {
   const [selectedDayIdx, setSelectedDayIdx] = useState<number>(0);
   const [isPlaying, setIsPlaying] = useState<boolean>(false);
   const [isDataLoaded, setIsDataLoaded] = useState<boolean>(false);
+
+  // Responsive design
+  const theme = useTheme();
+  const isMobile = useMediaQuery(theme.breakpoints.down("md"));
+  const isSmallMobile = useMediaQuery(theme.breakpoints.down("sm"));
 
   // Ref to track current day for smooth animation
   const currentDayRef = useRef<number>(0);
@@ -104,8 +115,20 @@ function App(): JSX.Element {
           <DataLoader onDataLoaded={handleDataLoaded} />
 
           {loadedData && (
-            <Box sx={{ display: "flex", gap: 0, height: "100%" }}>
-              <Box sx={{ flex: 1 }}>
+            <Box
+              sx={{
+                display: "flex",
+                gap: 0,
+                height: "100%",
+                flexDirection: isMobile ? "column" : "row",
+              }}
+            >
+              <Box
+                sx={{
+                  flex: 1,
+                  position: "relative",
+                }}
+              >
                 <MapRenderer
                   nlGeoJson={loadedData.nlGeoJson}
                   covidDataGroupedByDay={loadedData.covidDataGroupedByDay}
@@ -113,23 +136,53 @@ function App(): JSX.Element {
                   selectedDayIdx={selectedDayIdx}
                   isDataLoaded={isDataLoaded}
                 />
+
+                {/* Mobile legend overlay */}
+                {isMobile && (
+                  <Box
+                    sx={{
+                      position: "absolute",
+                      top: 10,
+                      right: 10,
+                      zIndex: 1000,
+                      backgroundColor: "rgba(255, 255, 255, 0.95)",
+                      borderRadius: "8px",
+                      padding: "8px",
+                      boxShadow: "0 2px 8px rgba(0,0,0,0.2)",
+                      maxWidth: "120px",
+                    }}
+                  >
+                    <LegendBox
+                      min={loadedData.colorScale.domain()[0]}
+                      mid={loadedData.colorScale.domain()[1]}
+                      max={loadedData.colorScale.domain()[2]}
+                      colorScale={loadedData.colorScale}
+                      isMobile={true}
+                    />
+                  </Box>
+                )}
               </Box>
-              <Box
-                sx={{
-                  width: 250,
-                  display: "flex",
-                  alignItems: "center",
-                  justifyContent: "center",
-                  padding: 0,
-                }}
-              >
-                <LegendBox
-                  min={loadedData.colorScale.domain()[0]}
-                  mid={loadedData.colorScale.domain()[1]}
-                  max={loadedData.colorScale.domain()[2]}
-                  colorScale={loadedData.colorScale}
-                />
-              </Box>
+
+              {/* Desktop legend */}
+              {!isMobile && (
+                <Box
+                  sx={{
+                    width: 250,
+                    display: "flex",
+                    alignItems: "center",
+                    justifyContent: "center",
+                    padding: 0,
+                  }}
+                >
+                  <LegendBox
+                    min={loadedData.colorScale.domain()[0]}
+                    mid={loadedData.colorScale.domain()[1]}
+                    max={loadedData.colorScale.domain()[2]}
+                    colorScale={loadedData.colorScale}
+                    isMobile={false}
+                  />
+                </Box>
+              )}
             </Box>
           )}
         </div>
@@ -147,6 +200,8 @@ function App(): JSX.Element {
           onReset={handleReset}
           onPrevious={handlePrevious}
           onNext={handleNext}
+          isMobile={isMobile}
+          isSmallMobile={isSmallMobile}
         />
       )}
     </>
