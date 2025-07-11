@@ -127,6 +127,9 @@ export function MapRenderer({
     // Create SVG container
     const svg = d3.select(svgRef.current);
 
+    // Center the map initially or apply preserved transform
+    const g = svg.append("g");
+
     // Add zoom behavior with better bounds
     const zoom = d3
       .zoom()
@@ -137,20 +140,26 @@ export function MapRenderer({
       });
 
     svg.call(zoom as any);
-
-    // Center the map initially or apply preserved transform
-    const g = svg.append("g");
-
+    const defaultTransform = d3.zoomIdentity
+      .translate(-width * 0.05, height * 0.05)
+      .scale(0.85);
+    // Apply initial transform using D3's zoom transform method
     if (isInitialRender.current) {
-      // First render - center with padding
-      g.attr("transform", `translate(${width * 0.05}, ${height * 0.05})`);
+      // First render - apply default transform
+      svg.call(zoom.transform as any, defaultTransform);
+      setCurrentTransform(defaultTransform);
       isInitialRender.current = false;
     } else if (currentTransform) {
       // Subsequent renders - apply preserved transform
-      g.attr("transform", currentTransform.toString());
+      console.log(
+        "Subsequent renders - apply preserved transform",
+        currentTransform
+      );
+      svg.call(zoom.transform as any, currentTransform);
     } else {
-      // Fallback - center with padding
-      g.attr("transform", `translate(${width * 0.05}, ${height * 0.05})`);
+      // Fallback - apply default transform
+      svg.call(zoom.transform as any, defaultTransform);
+      setCurrentTransform(defaultTransform);
     }
 
     // Render municipalities
@@ -177,8 +186,6 @@ export function MapRenderer({
         const municipalityCode = areaCodeToGmCode(areaCode);
         const covidValue = currentDayData.data[municipalityCode] || 0;
         const areaName = d.properties?.areaName || "Unknown";
-
-        console.log("Mouseover:", areaName, covidValue);
 
         // Highlight on hover
         d3.select(this)
@@ -248,9 +255,9 @@ export function MapRenderer({
     );
   }
 
-  console.log("MapRenderer: Rendering D3 map");
-  console.log("MapRenderer: isDataLoaded:", isDataLoaded);
-  console.log("MapRenderer: nlGeoJson:", !!nlGeoJson);
+  console.debug("MapRenderer: Rendering D3 map");
+  console.debug("MapRenderer: isDataLoaded:", isDataLoaded);
+  console.debug("MapRenderer: nlGeoJson:", !!nlGeoJson);
 
   return (
     <Box
