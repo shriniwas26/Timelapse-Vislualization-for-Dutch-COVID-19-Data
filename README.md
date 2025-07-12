@@ -9,15 +9,22 @@ Access my site at [covid-data-nl.netlify.app](https://covid-data-nl.netlify.app/
 - [About The App](#about-the-app)
 - [Screenshots](#screenshots)
 - [Setup](#setup)
+- [Development](#development)
 - [Approach](#approach)
 - [Status](#status)
 - [License](#license)
 
 ## About The App
 
-This app visualized COVID-19 data in the Netherlands, as published by the National Institute for Public Health and the Environment (Rijksinstituut voor Volksgezondheid en Milieu) or [RIVM](https://www.rivm.nl/).
+This app visualizes COVID-19 data in the Netherlands, as published by the National Institute for Public Health and the Environment (Rijksinstituut voor Volksgezondheid en Milieu) or [RIVM](https://www.rivm.nl/).
 
-I built this app as a fun exercise in teaching myself React.js and D3.js.
+Built with modern web technologies:
+
+- **React 19** with TypeScript
+- **Vite** for fast development and building
+- **D3.js** for data visualization
+- **Material-UI** for responsive design
+- **Netlify** for deployment
 
 ## Screenshots
 
@@ -26,26 +33,59 @@ I built this app as a fun exercise in teaching myself React.js and D3.js.
 
 ## Setup
 
-- Download or clone the repository
-- Run `yarn install`
-- Run `yarn start`
-- Rest of the insturctions are described in the standard README that comes with the `start-react-app` template in [this file](README.old.md)
+### Prerequisites
+
+- Node.js 18+
+- npm or yarn
+
+### Installation
+
+```bash
+# Clone the repository
+git clone <repository-url>
+cd Timelapse-COVID-19-Data
+
+# Install dependencies
+npm install
+
+# Start development server
+npm run dev
+```
+
+### Available Scripts
+
+- `npm run dev` - Start development server
+- `npm run build` - Build for production
+- `npm run preview` - Preview production build
+- `npm run lint` - Run ESLint
+- `npm run lint:fix` - Fix ESLint issues
+- `npm run type-check` - Run TypeScript type checking
+
+## Development
+
+This project uses:
+
+- **TypeScript** for type safety
+- **ESLint** for code quality
+- **Vite** for fast development and optimized builds
+- **Material-UI** for responsive components
 
 ## Approach
 
-- I've used the data as published by RIVM.
-- Basic data cleaning operations are done.
-- I've used (slightly old) population data per municipality to compute the case rate per day for each municipality. (v/s Absolute values published.)
-- For smoothness of animation, it actually renders a 14-day moving average.
+- Uses data published by RIVM
+- Performs basic data cleaning operations
+- Uses population data per municipality to compute case rates
+- Implements 14-day moving average for smooth animations
+- Responsive design for mobile and desktop
 
 ## Status
 
-This app is being developed. In version 2.0 I am plan to bring the following changes
+This app is actively developed. Planned improvements for version 2.0:
 
-- Move class based components to functional ones.
-- Better splitting.
-- Zooming in & out in the map.
-- Support to display other metrics, e.g. Hospitalization, and Mortality.
+- [ ] Enhanced map interactions (zoom, pan)
+- [ ] Support for additional metrics (hospitalization, mortality)
+- [ ] Improved performance optimizations
+- [ ] Better accessibility features
 
 ## License
 

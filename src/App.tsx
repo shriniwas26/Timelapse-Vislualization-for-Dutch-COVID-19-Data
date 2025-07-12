@@ -50,6 +50,7 @@ function App(): React.JSX.Element {
       }, ANIMATION_DELAY);
       return () => clearTimeout(timer);
     }
+    return undefined;
   }, [isPlaying, loadedData, selectedDayIdx, handleDayChange]); // Added selectedDayIdx and handleDayChange back
 
   const handleDataLoaded = useCallback((data: LoadedData) => {

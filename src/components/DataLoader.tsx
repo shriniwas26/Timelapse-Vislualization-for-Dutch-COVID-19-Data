@@ -48,8 +48,8 @@ interface LoadingProgress {
   totalSteps: number;
   currentFile: string;
   overallProgress: number;
-  fileSize?: string;
-  downloadSpeed?: string;
+  fileSize: string | undefined;
+  downloadSpeed: string | undefined;
   fileProgress: {
     map: number;
     population: number;
@@ -343,7 +343,7 @@ export function DataLoader({ onDataLoaded }: DataLoaderProps) {
           }
           // Compute moving average
           const movingAvgArr = movingAvg(
-            munData.map((d) => d[DAILY_REPORTED_FIELD]),
+            munData.map((d) => (d[DAILY_REPORTED_FIELD] as number) || 0),
             MOVING_AVG_WINDOW
           );
           for (let i = 0; i < munData.length; i++) {
@@ -362,8 +362,8 @@ export function DataLoader({ onDataLoaded }: DataLoaderProps) {
           );
           rowData["Municipality_code"] = elem["Municipality_code"];
           rowData[DAILY_REPORTED_FIELD_MA] = Math.round(
-            (elem[DAILY_REPORTED_FIELD_MA] /
-              populationDataDict[elem["Municipality_code"]]) *
+            (((elem[DAILY_REPORTED_FIELD_MA] as number) || 0) /
+              (populationDataDict[elem["Municipality_code"]] || 1)) *
               PER_POPULATION
           );
           return rowData;

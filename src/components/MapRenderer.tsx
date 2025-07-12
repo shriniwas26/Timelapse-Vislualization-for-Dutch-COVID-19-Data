@@ -42,7 +42,7 @@ export function MapRenderer({
   // Responsive design
   const theme = useTheme();
   const isMobile = useMediaQuery(theme.breakpoints.down("md"));
-  const isSmallMobile = useMediaQuery(theme.breakpoints.down("sm"));
+  // const isSmallMobile = useMediaQuery(theme.breakpoints.down("sm"));
 
   // Preserve zoom/pan state across re-renders
   const [currentTransform, setCurrentTransform] =
