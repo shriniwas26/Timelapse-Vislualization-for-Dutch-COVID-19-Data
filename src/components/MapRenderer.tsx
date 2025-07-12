@@ -51,7 +51,7 @@ export function MapRenderer({
 
   // Handle resize
   useEffect(() => {
-    if (!containerRef.current) return;
+    if (!containerRef.current) return undefined;
 
     const updateDimensions = () => {
       if (containerRef.current) {
