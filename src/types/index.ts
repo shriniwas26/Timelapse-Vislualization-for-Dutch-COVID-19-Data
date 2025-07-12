@@ -7,7 +7,6 @@ export interface CovidDataPoint {
   Total_reported: number;
   Daily_Total_reported?: number;
   Daily_Total_reported_ma?: number;
-  [key: string]: string | number | undefined;
 }
 
 export interface PopulationDataPoint {
