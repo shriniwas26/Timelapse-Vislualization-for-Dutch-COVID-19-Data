@@ -10,7 +10,7 @@ import { LoadedData } from "./types";
 
 const ANIMATION_DELAY = 50;
 
-function App(): JSX.Element {
+function App(): React.JSX.Element {
   // State
   const [loadedData, setLoadedData] = useState<LoadedData | null>(null);
   const [selectedDayIdx, setSelectedDayIdx] = useState<number>(0);

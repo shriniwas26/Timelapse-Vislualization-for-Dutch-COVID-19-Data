@@ -456,10 +456,10 @@ export function DataLoader({ onDataLoaded }: DataLoaderProps) {
                 ? "1.1rem"
                 : isMobile
                 ? "1.25rem"
-                : "1.5rem",
+                : "2rem",
             }}
           >
-            <h2>Fetching data... Please wait</h2>
+            Fetching data... Please wait
           </Typography>
 
           <Typography

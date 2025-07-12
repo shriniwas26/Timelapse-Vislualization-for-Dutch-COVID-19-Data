@@ -1,4 +1,5 @@
-import { Box, useMediaQuery, useTheme } from "@mui/material";
+import { Help } from "@mui/icons-material";
+import { Box, Fade, IconButton, useMediaQuery, useTheme } from "@mui/material";
 import * as d3 from "d3";
 import { useEffect, useRef, useState } from "react";
 import { DayData, GeoJson } from "../types";
@@ -26,6 +27,8 @@ export function MapRenderer({
   const containerRef = useRef<HTMLDivElement>(null);
   const [mapKey, setMapKey] = useState(0);
   const [dimensions, setDimensions] = useState({ width: 0, height: 0 });
+  const [showHelp, setShowHelp] = useState(false);
+  const [currentZoom, setCurrentZoom] = useState(1);
 
   // Responsive design
   const theme = useTheme();
@@ -144,6 +147,7 @@ export function MapRenderer({
       .on("zoom", (event) => {
         g.attr("transform", event.transform);
         setCurrentTransform(event.transform);
+        setCurrentZoom(event.transform.k);
       });
 
     svg.call(zoom as any);
@@ -155,6 +159,7 @@ export function MapRenderer({
       // First render - apply default transform
       svg.call(zoom.transform as any, defaultTransform);
       setCurrentTransform(defaultTransform);
+      setCurrentZoom(defaultTransform.k);
       isInitialRender.current = false;
     } else if (currentTransform) {
       // Subsequent renders - apply preserved transform
@@ -163,10 +168,12 @@ export function MapRenderer({
         currentTransform
       );
       svg.call(zoom.transform as any, currentTransform);
+      setCurrentZoom(currentTransform.k);
     } else {
       // Fallback - apply default transform
       svg.call(zoom.transform as any, defaultTransform);
       setCurrentTransform(defaultTransform);
+      setCurrentZoom(defaultTransform.k);
     }
 
     // Render municipalities
@@ -329,6 +336,121 @@ export function MapRenderer({
           height: "100%",
         }}
       />
+      {/* Persistent Help Icon */}
+      <Box
+        sx={{
+          position: "absolute",
+          top: 10,
+          right: 10,
+          zIndex: 1000,
+        }}
+      >
+        <IconButton
+          size="small"
+          sx={{
+            width: 28,
+            height: 28,
+            minWidth: 0,
+            minHeight: 0,
+            padding: 0,
+            backgroundColor: "rgba(255,255,255,0.9)",
+            boxShadow: "0 2px 8px rgba(0,0,0,0.2)",
+            "&:hover": { backgroundColor: "rgba(255,255,255,1)" },
+          }}
+          onClick={() => setShowHelp(true)}
+          aria-label="Show help"
+        >
+          <Help sx={{ width: 16, height: 16 }} />
+        </IconButton>
+      </Box>
+      {/* Help Overlay */}
+      <Fade in={showHelp && isDataLoaded}>
+        <Box
+          sx={{
+            position: "absolute",
+            top: 0,
+            left: 0,
+            right: 0,
+            bottom: 0,
+            zIndex: 1000,
+          }}
+        >
+          {/* Backdrop for clicking outside */}
+          <Box
+            sx={{
+              position: "absolute",
+              top: 0,
+              left: 0,
+              right: 0,
+              bottom: 0,
+              backgroundColor: "rgba(0, 0, 0, 0.3)",
+            }}
+            onClick={() => setShowHelp(false)}
+          />
+          {/* Help content */}
+          <Box
+            sx={{
+              position: "absolute",
+              top: "50%",
+              left: "50%",
+              transform: "translate(-50%, -50%)",
+              backgroundColor: "rgba(0, 0, 0, 0.8)",
+              color: "white",
+              padding: 2,
+              borderRadius: 2,
+              textAlign: "center",
+              zIndex: 1001,
+              maxWidth: isMobile ? "280px" : "320px",
+              boxShadow: "0 4px 20px rgba(0,0,0,0.5)",
+              cursor: "pointer",
+              userSelect: "none",
+            }}
+            onClick={() => setShowHelp(false)}
+            onKeyDown={(e) => {
+              if (e.key === "Escape" || e.key === "Enter" || e.key === " ") {
+                setShowHelp(false);
+              }
+            }}
+            tabIndex={0}
+            role="button"
+            aria-label="Dismiss help overlay"
+          >
+            <Box
+              sx={{
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center",
+                mb: 1,
+                flexWrap: "wrap",
+                gap: 0.5,
+              }}
+            >
+              <Help sx={{ width: 18, height: 18, mr: 1, flexShrink: 0 }} />
+              <strong style={{ fontSize: "1rem", whiteSpace: "nowrap" }}>
+                Map Controls
+              </strong>
+            </Box>
+            <Box sx={{ fontSize: "0.9rem", lineHeight: 1.4 }}>
+              {isMobile ? (
+                <>
+                  <div>• Pinch to zoom in/out</div>
+                  <div>• Drag to pan around</div>
+                  <div>• Don't pan/zoom during playback</div>
+                  <div>• Click anywhere to dismiss</div>
+                </>
+              ) : (
+                <>
+                  <div>• Scroll to zoom in/out</div>
+                  <div>• Click and drag to pan</div>
+                  <div>• Don't pan/zoom during playback</div>
+                  <div>• Click anywhere to dismiss</div>
+                </>
+              )}
+            </Box>
+          </Box>
+        </Box>
+      </Fade>
+      image.png{" "}
     </Box>
   );
 }
