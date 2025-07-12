@@ -109,6 +109,7 @@ function App(): React.JSX.Element {
                   colorScale={loadedData.colorScale}
                   selectedDayIdx={selectedDayIdx}
                   isDataLoaded={isDataLoaded}
+                  isPlaying={isPlaying}
                 />
 
                 {/* Mobile legend overlay */}

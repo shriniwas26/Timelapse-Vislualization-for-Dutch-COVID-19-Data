@@ -1,5 +1,12 @@
 import { Help } from "@mui/icons-material";
-import { Box, Fade, IconButton, useMediaQuery, useTheme } from "@mui/material";
+import {
+  Box,
+  Fade,
+  IconButton,
+  Snackbar,
+  useMediaQuery,
+  useTheme,
+} from "@mui/material";
 import * as d3 from "d3";
 import { useEffect, useRef, useState } from "react";
 import { DayData, GeoJson } from "../types";
@@ -14,6 +21,7 @@ interface MapRendererProps {
   colorScale: d3.ScaleLinear<number, string>;
   selectedDayIdx: number;
   isDataLoaded: boolean;
+  isPlaying: boolean;
 }
 
 export function MapRenderer({
@@ -22,6 +30,7 @@ export function MapRenderer({
   colorScale,
   selectedDayIdx,
   isDataLoaded,
+  isPlaying,
 }: MapRendererProps) {
   const svgRef = useRef<SVGSVGElement>(null);
   const containerRef = useRef<HTMLDivElement>(null);
@@ -29,6 +38,7 @@ export function MapRenderer({
   const [dimensions, setDimensions] = useState({ width: 0, height: 0 });
   const [showHelp, setShowHelp] = useState(false);
   const [currentZoom, setCurrentZoom] = useState(1);
+  const [showSnackbar, setShowSnackbar] = useState(false);
 
   // Responsive design
   const theme = useTheme();
@@ -145,6 +155,12 @@ export function MapRenderer({
       .zoom()
       .scaleExtent(isMobile ? [0.3, 6] : [0.5, 8]) // More restrictive zoom for mobile
       .on("zoom", (event) => {
+        // Only block and show Snackbar if playback is on AND this is a real user event
+        if (isPlaying && event.sourceEvent) {
+          setShowSnackbar(true);
+          // Prevent zoom/pan
+          return;
+        }
         g.attr("transform", event.transform);
         setCurrentTransform(event.transform);
         setCurrentZoom(event.transform.k);
@@ -163,14 +179,10 @@ export function MapRenderer({
       isInitialRender.current = false;
     } else if (currentTransform) {
       // Subsequent renders - apply preserved transform
-      console.log(
-        "Subsequent renders - apply preserved transform",
-        currentTransform
-      );
       svg.call(zoom.transform as any, currentTransform);
       setCurrentZoom(currentTransform.k);
-    } else {
-      // Fallback - apply default transform
+    } else if (!isPlaying) {
+      // Fallback - apply default transform only if not playing
       svg.call(zoom.transform as any, defaultTransform);
       setCurrentTransform(defaultTransform);
       setCurrentZoom(defaultTransform.k);
@@ -292,6 +304,7 @@ export function MapRenderer({
     mapKey,
     dimensions,
     isMobile,
+    isPlaying,
   ]);
 
   if (!isDataLoaded || !nlGeoJson) {
@@ -450,7 +463,13 @@ export function MapRenderer({
           </Box>
         </Box>
       </Fade>
-      image.png{" "}
+      <Snackbar
+        open={showSnackbar}
+        autoHideDuration={2500}
+        onClose={() => setShowSnackbar(false)}
+        anchorOrigin={{ vertical: "top", horizontal: "center" }}
+        message="Please pause playback before zooming or panning the map."
+      />
     </Box>
   );
 }
