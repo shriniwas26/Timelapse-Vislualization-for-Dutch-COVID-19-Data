@@ -94,55 +94,50 @@ function App(): React.JSX.Element {
                 display: "flex",
                 gap: 0,
                 height: "100%",
+                width: "100%",
                 flexDirection: isMobile ? "column" : "row",
               }}
             >
-              <Box
-                sx={{
-                  flex: 1,
-                  position: "relative",
-                }}
-              >
-                <MapRenderer
-                  nlGeoJson={loadedData.nlGeoJson}
-                  covidDataGroupedByDay={loadedData.covidDataGroupedByDay}
-                  colorScale={loadedData.colorScale}
-                  selectedDayIdx={selectedDayIdx}
-                  isDataLoaded={isDataLoaded}
-                  isPlaying={isPlaying}
-                />
+              <MapRenderer
+                nlGeoJson={loadedData.nlGeoJson}
+                covidDataGroupedByDay={loadedData.covidDataGroupedByDay}
+                colorScale={loadedData.colorScale}
+                selectedDayIdx={selectedDayIdx}
+                isDataLoaded={isDataLoaded}
+                isPlaying={isPlaying}
+              />
 
-                {/* Mobile legend overlay */}
-                {isMobile && (
-                  <Box
-                    sx={{
-                      position: "absolute",
-                      top: 10,
-                      right: 10,
-                      zIndex: 1000,
-                      backgroundColor: "rgba(255, 255, 255, 0.95)",
-                      borderRadius: "8px",
-                      padding: "8px",
-                      boxShadow: "0 2px 8px rgba(0,0,0,0.2)",
-                      maxWidth: "120px",
-                    }}
-                  >
-                    <LegendBox
-                      min={loadedData.colorScale.domain()[0]}
-                      mid={loadedData.colorScale.domain()[1]}
-                      max={loadedData.colorScale.domain()[2]}
-                      colorScale={loadedData.colorScale}
-                      isMobile={true}
-                    />
-                  </Box>
-                )}
-              </Box>
+              {/* Mobile legend overlay */}
+              {isMobile && (
+                <Box
+                  sx={{
+                    position: "absolute",
+                    top: 10,
+                    right: 10,
+                    zIndex: 1000,
+                    backgroundColor: "rgba(255, 255, 255, 0.95)",
+                    borderRadius: "8px",
+                    padding: "8px",
+                    width: "30%",
+                    boxShadow: "0 2px 8px rgba(0,0,0,0.2)",
+                  }}
+                >
+                  <LegendBox
+                    min={loadedData.colorScale.domain()[0]}
+                    mid={loadedData.colorScale.domain()[1]}
+                    max={loadedData.colorScale.domain()[2]}
+                    colorScale={loadedData.colorScale}
+                    isMobile={true}
+                  />
+                </Box>
+              )}
 
               {/* Desktop legend */}
               {!isMobile && (
                 <Box
                   sx={{
                     width: 250,
+                    height: "100%",
                     display: "flex",
                     alignItems: "center",
                     justifyContent: "center",

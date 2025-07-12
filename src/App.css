@@ -1,7 +1,7 @@
 :root {
-  --controls-height: 160px;
-  --controls-height-mobile: 200px;
-  --controls-height-small-mobile: 220px;
+  --controls-height: 100px;
+  --controls-height-mobile: 120px;
+  --controls-height-small-mobile: 140px;
 }
 
 .App {
@@ -49,8 +49,8 @@
 /* Map container styles */
 .map-container {
   width: 100%;
-  height: calc(100vh - var(--controls-height) - 40px);
-  max-height: 70vh;
+  height: 60vh;
+  min-height: 400px;
   min-width: 300px;
   position: relative;
   background: #fff;
@@ -58,6 +58,7 @@
   overflow: hidden;
   box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
   border: 1px solid #dee2e6;
+  margin-bottom: 16px; /* Reduce space between map and controls */
 }
 
 .map-container svg {

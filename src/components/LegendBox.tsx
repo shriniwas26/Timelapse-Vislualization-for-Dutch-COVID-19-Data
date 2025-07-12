@@ -17,7 +17,7 @@ export const LegendBox: React.FC<LegendBoxProps> = ({
   isMobile = false,
 }) => {
   const legendHeight = isMobile ? 120 : 180;
-  const legendWidth = isMobile ? 20 : 28;
+  const legendWidth = isMobile ? 40 : 38;
   const steps = isMobile ? 30 : 40;
   const values = d3
     .range(min, max, (max - min) / steps)

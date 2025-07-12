@@ -165,8 +165,8 @@ export function MapRenderer({
 
     svg.call(zoom as any);
     const defaultTransform = d3.zoomIdentity
-      .translate(-width * 0.05, height * 0.05)
-      .scale(isMobile ? 0.8 : 0.85); // Slightly smaller default scale for mobile
+      .translate(width * 0.05, height * 0.05)
+      .scale(isMobile ? 1.0 : 1.0); // Slightly smaller default scale for mobile
     // Apply initial transform using D3's zoom transform method
     if (isInitialRender.current) {
       // First render - apply default transform
@@ -327,7 +327,7 @@ export function MapRenderer({
       ref={containerRef}
       sx={{
         width: "100%",
-        height: "100%",
+        height: "90%", // Fill parent container
         position: "relative",
         backgroundColor: "#f8f9fa",
         // Mobile touch improvements
@@ -370,6 +370,66 @@ export function MapRenderer({
           <Help sx={{ width: 16, height: 16 }} />
         </IconButton>
       </Box>
+
+      {/* Interactive Controls Indicator */}
+      <Box
+        sx={{
+          position: "absolute",
+          bottom: 20,
+          right: 15,
+          zIndex: 1000,
+          display: "flex",
+          flexDirection: "column",
+          alignItems: "center",
+          gap: 3,
+          pointerEvents: "none", // Make sure it doesn't interfere with map interactions
+        }}
+      >
+        {/* Pan icon */}
+        <Box
+          sx={{
+            width: 28,
+            height: 28,
+            backgroundColor: "rgba(255,255,255,0.8)",
+            borderRadius: "50%",
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+            boxShadow: "0 2px 6px rgba(0,0,0,0.2)",
+            opacity: 0.7,
+          }}
+        >
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none">
+            <path
+              d="M10 9V5L3 12L10 19V15H14V19L21 12L14 5V9H10Z"
+              fill="rgba(0,0,0,0.7)"
+            />
+          </svg>
+        </Box>
+
+        {/* Pinch/Zoom icon */}
+        <Box
+          sx={{
+            width: 28,
+            height: 28,
+            backgroundColor: "rgba(255,255,255,0.8)",
+            borderRadius: "50%",
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+            boxShadow: "0 2px 6px rgba(0,0,0,0.2)",
+            opacity: 0.7,
+          }}
+        >
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none">
+            <path
+              d="M19 13H13V19H11V13H5V11H11V5H13V11H19V13Z"
+              fill="rgba(0,0,0,0.7)"
+            />
+          </svg>
+        </Box>
+      </Box>
+
       {/* Help Overlay */}
       <Fade in={showHelp && isDataLoaded}>
         <Box

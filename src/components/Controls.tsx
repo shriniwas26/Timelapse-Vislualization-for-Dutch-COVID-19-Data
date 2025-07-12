@@ -73,6 +73,7 @@ export function Controls({
           maxWidth: "700px",
           margin: "0 auto",
           width: "100%",
+          height: "100%",
           padding: isMobile ? "0 12px" : "0",
         }}
       >
