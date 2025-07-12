@@ -234,7 +234,7 @@ export function Controls({
                 },
               }}
             >
-              ⏮
+              ←
             </IconButton>
           </Tooltip>
 
@@ -278,7 +278,7 @@ export function Controls({
                 },
               }}
             >
-              ⏭
+              →
             </IconButton>
           </Tooltip>
         </Box>
