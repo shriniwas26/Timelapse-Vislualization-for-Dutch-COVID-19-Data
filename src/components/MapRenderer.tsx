@@ -37,7 +37,6 @@ export function MapRenderer({
   const [mapKey, setMapKey] = useState(0);
   const [dimensions, setDimensions] = useState({ width: 0, height: 0 });
   const [showHelp, setShowHelp] = useState(false);
-  const [currentZoom, setCurrentZoom] = useState(1);
   const [showSnackbar, setShowSnackbar] = useState(false);
 
   // Responsive design
@@ -126,7 +125,6 @@ export function MapRenderer({
     }
 
     const currentDayData = covidDataGroupedByDay[selectedDayIdx];
-    console.log("D3: Rendering map for day", selectedDayIdx);
 
     // Clear previous content
     d3.select(svgRef.current).selectAll("*").remove();
@@ -163,7 +161,6 @@ export function MapRenderer({
         }
         g.attr("transform", event.transform);
         setCurrentTransform(event.transform);
-        setCurrentZoom(event.transform.k);
       });
 
     svg.call(zoom as any);
@@ -175,17 +172,14 @@ export function MapRenderer({
       // First render - apply default transform
       svg.call(zoom.transform as any, defaultTransform);
       setCurrentTransform(defaultTransform);
-      setCurrentZoom(defaultTransform.k);
       isInitialRender.current = false;
     } else if (currentTransform) {
       // Subsequent renders - apply preserved transform
       svg.call(zoom.transform as any, currentTransform);
-      setCurrentZoom(currentTransform.k);
     } else if (!isPlaying) {
       // Fallback - apply default transform only if not playing
       svg.call(zoom.transform as any, defaultTransform);
       setCurrentTransform(defaultTransform);
-      setCurrentZoom(defaultTransform.k);
     }
 
     // Render municipalities

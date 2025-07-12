@@ -28,13 +28,14 @@ export const LegendBox: React.FC<LegendBoxProps> = ({
     <div
       style={{
         background: "#fff",
-        borderRadius: 8,
+        borderRadius: 12,
         boxShadow: "0 2px 8px rgba(0,0,0,0.1)",
         padding: isMobile ? 8 : 16,
         display: "block",
         textAlign: "center",
         width: "100%",
         maxWidth: isMobile ? 120 : 200,
+        border: "1px solid #000",
       }}
     >
       <div
@@ -59,6 +60,8 @@ export const LegendBox: React.FC<LegendBoxProps> = ({
             width={legendWidth}
             height={legendHeight / steps + 1}
             fill={colorScale(v)}
+            stroke="#000"
+            strokeWidth="0.5"
           />
         ))}
         {/* Axis labels (inverted) */}
